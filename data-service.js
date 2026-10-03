@@ -75,9 +75,29 @@ async function execute(type, payload, allowQueue = true) {
   return { synced: true };
 }
 
-export async function signUp(email, password) {
+export async function signUp(email, password, profile) {
   if (!db) throw new Error("Supabase 연결 정보가 아직 설정되지 않았어요.");
-  return db.auth.signUp({ email, password });
+  return db.auth.signUp({
+    email,
+    password,
+    options: {
+      data: {
+        full_name: profile.fullName,
+        birth_date: profile.birthDate,
+        daily_word_goal: profile.dailyWordGoal
+      }
+    }
+  });
+}
+
+export async function verifyEmailOtp(email, token) {
+  if (!db) throw new Error("Supabase 연결 정보가 아직 설정되지 않았어요.");
+  return db.auth.verifyOtp({ email, token, type: "email" });
+}
+
+export async function resendSignupOtp(email) {
+  if (!db) throw new Error("Supabase 연결 정보가 아직 설정되지 않았어요.");
+  return db.auth.resend({ type: "signup", email });
 }
 
 export async function signIn(email, password) {

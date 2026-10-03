@@ -3,6 +3,8 @@
 
 create table if not exists public.profiles (
   user_id uuid primary key references auth.users(id) on delete cascade,
+  full_name text,
+  birth_date date,
   daily_word_goal integer not null default 10 check (daily_word_goal in (5, 10, 20)),
   streak integer not null default 0 check (streak >= 0),
   last_study_date date,
@@ -10,6 +12,46 @@ create table if not exists public.profiles (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+alter table public.profiles add column if not exists full_name text;
+alter table public.profiles add column if not exists birth_date date;
+create unique index if not exists profiles_person_identity_idx
+  on public.profiles ((lower(regexp_replace(full_name, '[[:space:]]', '', 'g'))), birth_date)
+  where full_name is not null and birth_date is not null;
+
+create or replace function public.handle_new_user()
+returns trigger
+language plpgsql
+security definer set search_path = ''
+as $$
+declare
+  signup_name text := nullif(trim(new.raw_user_meta_data ->> 'full_name'), '');
+  signup_birth_date date := nullif(new.raw_user_meta_data ->> 'birth_date', '')::date;
+begin
+  if signup_name is null or signup_birth_date is null then
+    raise exception 'full_name and birth_date are required';
+  end if;
+
+  insert into public.profiles (user_id, full_name, birth_date, daily_word_goal)
+  values (
+    new.id,
+    signup_name,
+    signup_birth_date,
+    coalesce(nullif(new.raw_user_meta_data ->> 'daily_word_goal', '')::integer, 10)
+  )
+  on conflict (user_id) do nothing;
+  return new;
+end;
+$$;
+
+do $$
+begin
+  if not exists (select 1 from pg_trigger where tgname = 'on_auth_user_created') then
+    create trigger on_auth_user_created
+      after insert on auth.users
+      for each row execute procedure public.handle_new_user();
+  end if;
+end $$;
 
 create table if not exists public.chapter_progress (
   user_id uuid not null references auth.users(id) on delete cascade,

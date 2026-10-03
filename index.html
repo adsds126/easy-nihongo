@@ -8,7 +8,7 @@
     <title>Easy Nihongo — 오늘부터 말하는 일본어</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
-  <body>
+  <body class="auth-pending">
     <div class="app-shell">
       <aside class="sidebar">
         <button class="brand" data-page-link="home" aria-label="홈으로 이동">
@@ -189,13 +189,29 @@
         <p class="eyebrow">SAVE YOUR JOURNEY</p>
         <h2 id="auth-title">학습 기록을 이어가세요</h2>
         <p class="auth-description">로그인하면 단어, 회화, 복습 기록이<br />안전하게 클라우드에 저장돼요.</p>
-        <div class="auth-tabs"><button class="active" data-auth-mode="login">로그인</button><button data-auth-mode="signup">회원가입</button></div>
-        <form id="auth-form">
-          <label>이메일<input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com" required /></label>
-          <label>비밀번호<input id="auth-password" type="password" autocomplete="current-password" placeholder="6자 이상 입력" minlength="6" required /></label>
-          <p class="auth-message" id="auth-message"></p>
-          <button class="primary-button wide" id="auth-submit" type="submit">로그인</button>
-        </form>
+        <div id="auth-credentials-step">
+          <div class="auth-tabs"><button class="active" data-auth-mode="login">로그인</button><button data-auth-mode="signup">회원가입</button></div>
+          <form id="auth-form">
+            <div class="signup-fields" id="signup-fields" hidden>
+              <label>이름<input id="auth-name" type="text" autocomplete="name" placeholder="이름 입력" maxlength="40" /></label>
+              <label>생년월일<input id="auth-birth-date" type="date" autocomplete="bday" /></label>
+            </div>
+            <label>이메일<input id="auth-email" type="email" autocomplete="email" placeholder="name@example.com" required /></label>
+            <label>비밀번호<input id="auth-password" type="password" autocomplete="current-password" placeholder="6자 이상 입력" minlength="6" required /></label>
+            <p class="auth-message" id="auth-message"></p>
+            <button class="primary-button wide" id="auth-submit" type="submit">로그인</button>
+          </form>
+        </div>
+        <div class="otp-step" id="auth-otp-step" hidden>
+          <span class="otp-mail">✉</span><h3>이메일 인증번호 입력</h3>
+          <p><b id="otp-email-label"></b>으로 보낸<br />6자리 인증번호를 입력해 주세요.</p>
+          <form id="otp-form">
+            <label>인증번호<input id="auth-otp" type="text" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" maxlength="6" placeholder="000000" required /></label>
+            <p class="auth-message" id="otp-message"></p>
+            <button class="primary-button wide" type="submit">이메일 인증하기</button>
+          </form>
+          <div class="otp-actions"><button id="resend-otp">인증번호 다시 보내기</button><button id="back-to-signup">정보 수정하기</button></div>
+        </div>
         <div class="cloud-note"><span>☁</span><p><strong>무료로 안전하게 저장</strong><small>관리자 키 없이 본인의 학습 기록만 접근할 수 있어요.</small></p></div>
       </section>
     </div>

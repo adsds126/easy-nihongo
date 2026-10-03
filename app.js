@@ -1,5 +1,5 @@
 import {
-  isCloudConfigured, signUp, signIn, signOut, getSession, onAuthChange,
+  isCloudConfigured, signUp, signIn, signOut, verifyEmailOtp, resendSignupOtp, getSession, onAuthChange,
   loadLearningData, flushPendingActions, saveProfile, saveChapterProgress,
   saveWordProgress, saveReviewProgress, saveStudySession
 } from "./data-service.js";
@@ -13,6 +13,8 @@ const state = {
   kanaType: "hira",
   session: null,
   authMode: "login",
+  authRequired: false,
+  pendingSignup: null,
   speakingSentenceCount: 0,
   wordProgress: {},
   reviewProgress: {}
@@ -122,6 +124,7 @@ async function hydrateLearningData() {
     const data = await loadLearningData();
     if (data.profile?.daily_word_goal) state.wordGoal = data.profile.daily_word_goal;
     state.speakingSentenceCount = data.profile?.speaking_sentence_count || 0;
+    if (data.profile?.full_name) $('[data-user-name]').textContent = data.profile.full_name;
     $$('[data-streak]').forEach(el => el.textContent = data.profile?.streak || 0);
     state.wordProgress = Object.fromEntries(data.words.map(item => [item.word_id, item]));
     state.reviewProgress = Object.fromEntries(data.reviews.map(item => [item.review_id, item]));
@@ -203,6 +206,7 @@ function openModal(id) {
   document.body.style.overflow = "hidden";
 }
 function closeModal(id) {
+  if (id === "#auth-modal" && state.authRequired && !state.session) return;
   const modal = $(id);
   modal.classList.remove("open");
   modal.setAttribute("aria-hidden", "true");
@@ -421,15 +425,36 @@ $("#review-mic").addEventListener("click", event => {
 function setAuthMode(mode) {
   state.authMode = mode;
   $$('[data-auth-mode]').forEach(button => button.classList.toggle("active", button.dataset.authMode === mode));
-  $("#auth-submit").textContent = mode === "login" ? "로그인" : "무료로 시작하기";
+  $("#auth-submit").textContent = mode === "login" ? "로그인" : "회원가입 하기";
   $("#auth-password").autocomplete = mode === "login" ? "current-password" : "new-password";
+  $("#signup-fields").hidden = mode !== "signup";
+  $("#auth-name").required = mode === "signup";
+  $("#auth-birth-date").required = mode === "signup";
   $("#auth-message").textContent = "";
   $("#auth-message").classList.remove("success");
 }
 
-function openAuth() {
+function showCredentialsStep() {
+  $("#auth-credentials-step").hidden = false;
+  $("#auth-otp-step").hidden = true;
+  $("#auth-otp").value = "";
+  $("#otp-message").textContent = "";
+}
+
+function showOtpStep(email) {
+  $("#auth-credentials-step").hidden = true;
+  $("#auth-otp-step").hidden = false;
+  $("#otp-email-label").textContent = email;
+  $("#otp-message").classList.remove("success");
+  $("#auth-otp").focus();
+}
+
+function openAuth(required = false) {
   if ($("#settings-modal").classList.contains("open")) closeModal("#settings-modal");
+  state.authRequired = required;
+  document.body.classList.toggle("auth-locked", required);
   setAuthMode("login");
+  showCredentialsStep();
   $("#auth-form").reset();
   if (!isCloudConfigured) $("#auth-message").textContent = "Supabase 프로젝트 연결을 마치면 로그인할 수 있어요.";
   openModal("#auth-modal");
@@ -441,6 +466,8 @@ $("#auth-form").addEventListener("submit", async event => {
   event.preventDefault();
   const email = $("#auth-email").value.trim();
   const password = $("#auth-password").value;
+  const fullName = $("#auth-name").value.trim();
+  const birthDate = $("#auth-birth-date").value;
   const submit = $("#auth-submit");
   const message = $("#auth-message");
   submit.disabled = true;
@@ -449,13 +476,15 @@ $("#auth-form").addEventListener("submit", async event => {
   try {
     const { data, error } = state.authMode === "login"
       ? await signIn(email, password)
-      : await signUp(email, password);
+      : await signUp(email, password, { fullName, birthDate, dailyWordGoal: state.wordGoal });
     if (error) throw error;
     if (state.authMode === "signup" && !data.session) {
-      message.textContent = "이메일로 보낸 인증 링크를 확인해 주세요.";
-      message.classList.add("success");
+      state.pendingSignup = { email, fullName, birthDate };
+      showOtpStep(email);
       return;
     }
+    state.authRequired = false;
+    document.body.classList.remove("auth-locked");
     updateAccountUI(data.session);
     await persist(saveProfile({ daily_word_goal: state.wordGoal, last_study_date: new Date().toISOString().slice(0, 10) }));
     await hydrateLearningData();
@@ -465,11 +494,61 @@ $("#auth-form").addEventListener("submit", async event => {
     console.error(error);
     message.textContent = error.message?.includes("Invalid login")
       ? "이메일 또는 비밀번호를 확인해 주세요."
+      : error.message?.includes("Database error")
+        ? "동일한 이름과 생년월일로 가입된 계정이 있어요."
       : error.message || "잠시 후 다시 시도해 주세요.";
   } finally {
     submit.disabled = false;
-    submit.textContent = state.authMode === "login" ? "로그인" : "무료로 시작하기";
+    submit.textContent = state.authMode === "login" ? "로그인" : "회원가입 하기";
   }
+});
+
+$("#auth-otp").addEventListener("input", event => {
+  event.target.value = event.target.value.replace(/\D/g, "").slice(0, 6);
+});
+$("#otp-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const token = $("#auth-otp").value;
+  const message = $("#otp-message");
+  const submit = event.currentTarget.querySelector('button[type="submit"]');
+  if (!state.pendingSignup || token.length !== 6) return;
+  submit.disabled = true;
+  submit.textContent = "인증 중…";
+  message.textContent = "";
+  try {
+    const { data, error } = await verifyEmailOtp(state.pendingSignup.email, token);
+    if (error) throw error;
+    state.authRequired = false;
+    document.body.classList.remove("auth-locked");
+    updateAccountUI(data.session);
+    await persist(saveProfile({
+      full_name: state.pendingSignup.fullName,
+      birth_date: state.pendingSignup.birthDate,
+      daily_word_goal: state.wordGoal,
+      last_study_date: new Date().toISOString().slice(0, 10)
+    }));
+    await hydrateLearningData();
+    state.pendingSignup = null;
+    closeModal("#auth-modal");
+    showToast("이메일 인증 완료! 학습 기록 저장을 시작해요.");
+  } catch (error) {
+    console.error(error);
+    message.classList.remove("success");
+    message.textContent = "인증번호가 다르거나 만료됐어요. 다시 확인해 주세요.";
+  } finally {
+    submit.disabled = false;
+    submit.textContent = "이메일 인증하기";
+  }
+});
+$("#resend-otp").addEventListener("click", async () => {
+  if (!state.pendingSignup) return;
+  const { error } = await resendSignupOtp(state.pendingSignup.email);
+  $("#otp-message").textContent = error ? "잠시 후 다시 시도해 주세요." : "새 인증번호를 보냈어요.";
+  $("#otp-message").classList.toggle("success", !error);
+});
+$("#back-to-signup").addEventListener("click", () => {
+  showCredentialsStep();
+  setAuthMode("signup");
 });
 
 $("#account-action").addEventListener("click", async () => {
@@ -477,7 +556,7 @@ $("#account-action").addEventListener("click", async () => {
   await signOut();
   closeModal("#settings-modal");
   updateAccountUI(null);
-  showToast("로그아웃했어요. 기기의 임시 기록은 그대로 남아 있어요.");
+  openAuth(true);
 });
 
 $$(".modal-backdrop").forEach(backdrop => backdrop.addEventListener("click", event => {
@@ -496,15 +575,35 @@ updateGoalUI();
 async function initializeCloud() {
   if (!isCloudConfigured) {
     updateAccountUI(null);
+    document.body.classList.remove("auth-pending");
+    openAuth(true);
     return;
   }
   const session = await getSession();
   updateAccountUI(session);
-  if (session) await hydrateLearningData();
+  document.body.classList.remove("auth-pending");
+  if (session) {
+    state.authRequired = false;
+    document.body.classList.remove("auth-locked");
+    await hydrateLearningData();
+  } else {
+    openAuth(true);
+  }
   onAuthChange(async nextSession => {
     const changedUser = nextSession?.user?.id !== state.session?.user?.id;
     updateAccountUI(nextSession);
-    if (nextSession && changedUser) await hydrateLearningData();
+    if (nextSession && changedUser) {
+      state.authRequired = false;
+      document.body.classList.remove("auth-locked");
+      await hydrateLearningData();
+      if ($("#auth-modal").classList.contains("open")) {
+        state.pendingSignup = null;
+        closeModal("#auth-modal");
+        showToast("이메일 인증 완료! 학습 기록 저장을 시작해요.");
+      }
+    } else if (!nextSession) {
+      openAuth(true);
+    }
   });
 }
 
