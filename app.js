@@ -23,6 +23,7 @@ const state = {
   weeklyGoalDays: 5,
   chapterFilter: "all",
   activeChapterIndex: 0,
+  fontScale: localStorage.getItem("easyNihongo.fontScale") || "large",
   speechRate: Number(localStorage.getItem("easyNihongo.speechRate") || 0.92),
   preferredVoiceURI: localStorage.getItem("easyNihongo.voiceURI") || "",
   japaneseVoices: []
@@ -408,6 +409,15 @@ function updateGoalUI() {
   $$("[data-goal]").forEach(btn => btn.classList.toggle("selected", Number(btn.dataset.goal) === state.wordGoal));
 }
 
+const fontScales = { normal: 1, large: 1.15, xlarge: 1.3 };
+
+function applyFontScale() {
+  const scale = fontScales[state.fontScale] || fontScales.large;
+  document.documentElement.style.setProperty("--ui-scale", String(scale));
+  document.documentElement.dataset.fontScale = state.fontScale;
+  $$('[data-font-scale]').forEach(button => button.classList.toggle("selected", button.dataset.fontScale === state.fontScale));
+}
+
 function openModal(id) {
   const modal = $(id);
   modal.removeAttribute("inert");
@@ -656,7 +666,7 @@ async function nextWord(hard = false) {
 $("#word-hard").addEventListener("click", () => nextWord(true));
 $("#word-know").addEventListener("click", () => nextWord(false));
 
-function openSettings() { updateGoalUI(); refreshJapaneseVoices(); updateVoiceStatus(); openModal("#settings-modal"); }
+function openSettings() { updateGoalUI(); applyFontScale(); refreshJapaneseVoices(); updateVoiceStatus(); openModal("#settings-modal"); }
 function openProfile() { state.session ? openSettings() : openAuth(); }
 $("#open-settings").addEventListener("click", openProfile);
 $("#mobile-settings").addEventListener("click", openProfile);
@@ -676,9 +686,15 @@ $$('[data-speech-rate]').forEach(button => button.addEventListener("click", () =
   localStorage.setItem("easyNihongo.speechRate", String(state.speechRate));
   updateVoiceStatus();
 }));
+$$('[data-font-scale]').forEach(button => button.addEventListener("click", () => {
+  state.fontScale = button.dataset.fontScale;
+  localStorage.setItem("easyNihongo.fontScale", state.fontScale);
+  applyFontScale();
+}));
 $("#voice-preview").addEventListener("click", () => speak("こんにちは。いっしょに練習しましょう。", state.speechRate));
 $("#save-settings").addEventListener("click", async () => {
   localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
+  localStorage.setItem("easyNihongo.fontScale", state.fontScale);
   state.wordIndex = 0;
   await persist(saveProfile({ daily_word_goal: state.wordGoal }), state.session ? "클라우드에도 저장했어요." : "");
   updateGoalUI(); renderWord(); closeModal("#settings-modal");
@@ -832,6 +848,7 @@ renderKana();
 renderWord();
 renderReview();
 updateGoalUI();
+applyFontScale();
 renderWeeklyGoal();
 refreshJapaneseVoices();
 if ("speechSynthesis" in window) speechSynthesis.addEventListener("voiceschanged", refreshJapaneseVoices);

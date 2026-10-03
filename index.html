@@ -173,8 +173,13 @@
     <div class="modal-backdrop" id="settings-modal" aria-hidden="true" inert>
       <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settings-title">
         <button class="modal-close" id="close-settings" aria-label="닫기">×</button>
-        <p class="eyebrow">MY STUDY PLAN</p><h2 id="settings-title">하루에 몇 단어씩 만날까요?</h2><p>부담 없이 꾸준히 할 수 있는 양을 골라주세요.</p>
+        <p class="eyebrow">MY STUDY SETTINGS</p><h2 id="settings-title">학습 설정</h2><p>보기 편하고 꾸준히 공부할 수 있도록 조절해 보세요.</p>
+        <h3 class="settings-section-title">하루 단어 수</h3>
         <div class="goal-options"><button data-goal="5"><b>5개</b><span>가볍게 · 약 5분</span></button><button class="selected" data-goal="10"><b>10개</b><span>기본 · 약 10분</span><em>추천</em></button><button data-goal="20"><b>20개</b><span>집중 · 약 18분</span></button></div>
+        <div class="display-settings">
+          <div class="display-heading"><span>가</span><div><strong>전체 글씨 크기</strong><small>화면 전체를 읽기 편한 크기로 확대해요.</small></div></div>
+          <div class="font-size-options" aria-label="전체 글씨 크기"><button data-font-scale="normal"><b>가</b><span>보통</span><small>100%</small></button><button class="selected" data-font-scale="large"><b>가</b><span>크게</span><small>115%</small></button><button data-font-scale="xlarge"><b>가</b><span>아주 크게</span><small>130%</small></button></div>
+        </div>
         <div class="voice-settings">
           <div class="voice-heading"><span>♬</span><div><strong>일본어 발음 음성</strong><small id="voice-status">가장 자연스러운 일본어 음성을 자동으로 선택해요.</small></div></div>
           <label>음성 선택<select id="voice-select"><option value="">자동 선택</option></select></label>
