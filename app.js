@@ -4,11 +4,13 @@ import {
   saveWordProgress, saveReviewProgress, saveStudySession
 } from "./data-service.js";
 import { evaluateRecognitionAlternatives } from "./speech-evaluator.js";
+import { dailySentences } from "./daily-sentences.js";
 
 const state = {
   page: "home",
   wordGoal: Number(localStorage.getItem("easyNihongo.wordGoal") || 10),
   wordIndex: 0,
+  sentenceIndex: 0,
   lessonStep: 0,
   reviewStep: 0,
   kanaType: "hira",
@@ -28,6 +30,9 @@ const state = {
   preferredVoiceURI: localStorage.getItem("easyNihongo.voiceURI") || "",
   japaneseVoices: []
 };
+
+const todayForSentence = new Date();
+state.sentenceIndex = Math.floor(Date.UTC(todayForSentence.getFullYear(), todayForSentence.getMonth(), todayForSentence.getDate()) / 86400000) % dailySentences.length;
 
 const words = [
   { jp: "コーヒー", reading: "こーひー · 코오히이", ko: "커피", type: "명사", example: "コーヒーをください。", exampleKo: "커피를 주세요." },
@@ -243,6 +248,7 @@ async function hydrateLearningData() {
     localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
     updateGoalUI();
     renderWord();
+    renderSentence();
     renderChapters();
     renderWeeklyGoal();
     const synced = await flushPendingActions();
@@ -362,6 +368,25 @@ function renderChapters() {
   $("#course-total-count").textContent = chapters.length;
   $$('[data-chapter-filter]').forEach(button => button.classList.toggle("active", button.dataset.chapterFilter === state.chapterFilter));
   renderHomeLesson();
+}
+
+function renderSentence() {
+  const item = dailySentences[state.sentenceIndex];
+  const progress = state.reviewProgress[`sentence-${item.source}`];
+  $("#home-sentence-category").textContent = item.category;
+  $("#home-sentence-jp").textContent = item.jp;
+  $("#home-sentence-reading").textContent = item.reading;
+  $("#home-sentence-ko").textContent = item.ko;
+  $("#home-sentence-sound").dataset.speak = item.jp;
+  $("#sentence-category").textContent = item.category;
+  $("#sentence-source").textContent = `선별 문장 ${state.sentenceIndex + 1} / ${dailySentences.length}`;
+  $("#sentence-jp").textContent = item.jp;
+  $("#sentence-reading").textContent = item.reading;
+  $("#sentence-ko").textContent = item.ko;
+  $("#sentence-sound").dataset.speak = item.jp;
+  $("#sentence-result").textContent = progress ? "✓ 이전에 말하기를 완료한 문장이에요." : "듣고 난 뒤 문장을 직접 말해보세요.";
+  $("#sentence-result").className = progress ? "speech-result correct" : "speech-result";
+  $("#sentence-practice").textContent = progress ? "● 다시 말하기" : "● 문장 말하기";
 }
 
 function renderKana() {
@@ -539,6 +564,11 @@ function renderReview() {
   $("#review-mic small").textContent = item.answer;
 }
 
+function moveSentence(direction) {
+  state.sentenceIndex = (state.sentenceIndex + direction + dailySentences.length) % dailySentences.length;
+  renderSentence();
+}
+
 document.addEventListener("click", event => {
   const pageLink = event.target.closest("[data-page-link]");
   if (pageLink) navigate(pageLink.dataset.pageLink);
@@ -702,6 +732,33 @@ $("#save-settings").addEventListener("click", async () => {
 });
 
 $("#review-hint").addEventListener("click", () => $("#hint-text").classList.toggle("show"));
+$("#sentence-prev").addEventListener("click", () => moveSentence(-1));
+$("#sentence-next").addEventListener("click", () => moveSentence(1));
+$("#sentence-practice").addEventListener("click", event => {
+  const button = event.currentTarget;
+  const item = dailySentences[state.sentenceIndex];
+  speechPractice(button, item.jp, (transcript, match) => {
+    $("#sentence-result").textContent = `✓ 「${transcript}」 ${match.feedback}`;
+    $("#sentence-result").className = "speech-result correct";
+    speak(item.jp);
+    const reviewId = `sentence-${item.source}`;
+    const previous = state.reviewProgress[reviewId] || {};
+    const progress = {
+      review_id: reviewId,
+      repetitions: (previous.repetitions || 0) + 1,
+      ease_factor: previous.ease_factor || 2.5,
+      interval_days: Math.min((previous.interval_days || 1) * 2, 30),
+      next_review_at: dateAfter(Math.min((previous.interval_days || 1) * 2, 30)),
+      last_result: "good"
+    };
+    state.reviewProgress[reviewId] = progress;
+    persist(saveReviewProgress(progress), "오늘의 문장 학습을 저장했어요.");
+    recordStudyActivity({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 0 });
+  }, match => {
+    $("#sentence-result").textContent = `${match.transcript ? `「${match.transcript}」로 들렸어요. ` : ""}${match.feedback}`;
+    $("#sentence-result").className = "speech-result retry";
+  });
+});
 $("#review-mic").addEventListener("click", event => {
   const button = event.currentTarget;
   const item = reviewItems[state.reviewStep];
@@ -847,6 +904,7 @@ renderChapters();
 renderKana();
 renderWord();
 renderReview();
+renderSentence();
 updateGoalUI();
 applyFontScale();
 renderWeeklyGoal();

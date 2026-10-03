@@ -20,6 +20,7 @@
           <button class="nav-item active" data-page-link="home"><span>⌂</span>홈</button>
           <button class="nav-item" data-page-link="lessons"><span>▤</span>회화 챕터</button>
           <button class="nav-item" data-page-link="words"><span>字</span>오늘의 단어</button>
+          <button class="nav-item" data-page-link="sentences"><span>文</span>오늘의 문장</button>
           <button class="nav-item" data-page-link="kana"><span>あ</span>가나 연습</button>
           <button class="nav-item" data-page-link="review"><span>↻</span>복습</button>
         </nav>
@@ -104,6 +105,12 @@
             <button class="word-chip" data-speak="冷たい"><span>冷たい <em>つめたい</em></span><small>차갑다</small><i>♬</i></button>
             <button class="word-chip" data-speak="お願いします"><span>お願いします <em>おねがいします</em></span><small>부탁합니다</small><i>♬</i></button>
           </div>
+
+          <div class="section-title"><div><p class="eyebrow">TODAY'S SENTENCE</p><h2>오늘의 문장</h2></div><button class="text-button" data-page-link="sentences">문장 학습 <span>›</span></button></div>
+          <article class="home-sentence-card">
+            <div><span class="sentence-category" id="home-sentence-category">일상</span><h3 id="home-sentence-jp"></h3><p id="home-sentence-reading"></p><strong id="home-sentence-ko"></strong></div>
+            <button class="sentence-sound" id="home-sentence-sound" data-speak="" aria-label="오늘의 문장 듣기">▶</button>
+          </article>
         </section>
 
         <section class="page" data-page="lessons">
@@ -122,6 +129,20 @@
             </article>
             <div class="word-actions"><button class="secondary-button" id="word-hard">아직 어려워요</button><button class="primary-button" id="word-know">알고 있어요 <span>→</span></button></div>
             <p class="shortcut-hint">단어 카드를 누르면 뜻을 가릴 수 있어요.</p>
+          </div>
+        </section>
+
+        <section class="page" data-page="sentences">
+          <div class="topbar"><div><p class="eyebrow">DAILY SENTENCE</p><h1>오늘의 문장</h1><p class="page-intro">하루 한 문장을 듣고, 뜻을 이해한 뒤 직접 말해보세요.</p></div></div>
+          <div class="sentence-study-layout">
+            <article class="sentence-study-card">
+              <div class="sentence-card-top"><span class="sentence-category" id="sentence-category">일상</span><small id="sentence-source">선별 문장 1 / 40</small></div>
+              <button class="sentence-main-sound" id="sentence-sound" data-speak="" aria-label="오늘의 문장 듣기">▶</button>
+              <h2 id="sentence-jp"></h2><p class="sentence-reading" id="sentence-reading"></p><strong id="sentence-ko"></strong>
+              <div class="sentence-navigator"><button id="sentence-prev">← 이전 문장</button><button id="sentence-next">다음 문장 →</button></div>
+            </article>
+            <button class="primary-button sentence-practice" id="sentence-practice">● 문장 말하기</button>
+            <div class="speech-result" id="sentence-result"></div>
           </div>
         </section>
 
@@ -148,7 +169,7 @@
       </main>
 
       <nav class="bottom-nav" aria-label="모바일 메뉴">
-        <button class="active" data-page-link="home"><span>⌂</span>홈</button><button data-page-link="lessons"><span>▤</span>회화</button><button class="speak-center" data-lesson="current"><span>●</span>말하기</button><button data-page-link="words"><span>字</span>단어</button><button data-page-link="review"><span>↻</span>복습</button>
+        <button class="active" data-page-link="home"><span>⌂</span>홈</button><button data-page-link="lessons"><span>▤</span>회화</button><button class="speak-center" data-lesson="current"><span>●</span>말하기</button><button data-page-link="sentences"><span>文</span>문장</button><button data-page-link="words"><span>字</span>단어</button><button data-page-link="review"><span>↻</span>복습</button>
       </nav>
     </div>
 
