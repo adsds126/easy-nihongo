@@ -1,10 +1,21 @@
+import {
+  isCloudConfigured, signUp, signIn, signOut, getSession, onAuthChange,
+  loadLearningData, flushPendingActions, saveProfile, saveChapterProgress,
+  saveWordProgress, saveReviewProgress, saveStudySession
+} from "./data-service.js";
+
 const state = {
   page: "home",
   wordGoal: Number(localStorage.getItem("easyNihongo.wordGoal") || 10),
   wordIndex: 0,
   lessonStep: 0,
   reviewStep: 0,
-  kanaType: "hira"
+  kanaType: "hira",
+  session: null,
+  authMode: "login",
+  speakingSentenceCount: 0,
+  wordProgress: {},
+  reviewProgress: {}
 };
 
 const words = [
@@ -72,6 +83,66 @@ function showToast(message) {
   toastTimer = setTimeout(() => toast.classList.remove("show"), 2200);
 }
 
+async function persist(task, successMessage = "") {
+  document.body.classList.add("syncing");
+  try {
+    const result = await task;
+    if (successMessage && result?.synced) showToast(successMessage);
+    return result;
+  } catch (error) {
+    console.error(error);
+    showToast("인터넷 연결을 확인해 주세요. 기록은 기기에 임시 저장했어요.");
+    return null;
+  } finally {
+    document.body.classList.remove("syncing");
+  }
+}
+
+function dateAfter(days) {
+  const date = new Date();
+  date.setDate(date.getDate() + days);
+  return date.toISOString();
+}
+
+function updateAccountUI(session) {
+  state.session = session;
+  const email = session?.user?.email || "";
+  const initial = email ? email[0].toUpperCase() : "민";
+  $$('[data-user-avatar]').forEach(el => el.textContent = initial);
+  $('[data-user-name]').textContent = email ? email.split("@")[0] : "학습자님";
+  $("#profile-status").textContent = !isCloudConfigured ? "클라우드 설정 필요" : email ? "기록 동기화됨" : "로그인이 필요해요";
+  $("#account-email").textContent = email || (isCloudConfigured ? "로그인되지 않음" : "Supabase 설정 필요");
+  $("#account-action").textContent = email ? "로그아웃" : "로그인";
+  $("#account-panel").classList.toggle("connected", Boolean(email));
+}
+
+async function hydrateLearningData() {
+  document.body.classList.add("syncing");
+  try {
+    const data = await loadLearningData();
+    if (data.profile?.daily_word_goal) state.wordGoal = data.profile.daily_word_goal;
+    state.speakingSentenceCount = data.profile?.speaking_sentence_count || 0;
+    $$('[data-streak]').forEach(el => el.textContent = data.profile?.streak || 0);
+    state.wordProgress = Object.fromEntries(data.words.map(item => [item.word_id, item]));
+    state.reviewProgress = Object.fromEntries(data.reviews.map(item => [item.review_id, item]));
+    data.chapters.forEach(item => {
+      const index = Number(item.chapter_id.replace("chapter-", "")) - 1;
+      if (chapters[index]) chapters[index].done = item.completed;
+    });
+    localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
+    updateGoalUI();
+    renderWord();
+    renderChapters();
+    const synced = await flushPendingActions();
+    if (synced) showToast(`기기에 저장된 기록 ${synced}개를 동기화했어요.`);
+  } catch (error) {
+    console.error(error);
+    showToast("클라우드 기록을 불러오지 못해 기기 기록으로 시작해요.");
+  } finally {
+    document.body.classList.remove("syncing");
+  }
+}
+
 function speak(text, rate = 0.88) {
   if (!("speechSynthesis" in window)) return showToast("이 브라우저에서는 음성 재생을 지원하지 않아요.");
   speechSynthesis.cancel();
@@ -105,6 +176,7 @@ function renderKana() {
 
 function renderWord() {
   const item = words[state.wordIndex % Math.min(state.wordGoal, words.length)];
+  const progress = state.wordProgress[item.jp];
   $("#word-index").textContent = state.wordIndex + 1;
   $("#word-total").textContent = state.wordGoal;
   $("#word-jp").textContent = item.jp;
@@ -113,8 +185,8 @@ function renderWord() {
   $(".word-type").textContent = item.type;
   $("#word-example").innerHTML = `${item.example} <em>${item.exampleKo}</em>`;
   $("#flashcard").classList.remove("hidden-meaning");
-  $("#bookmark-word").classList.remove("saved");
-  $("#bookmark-word").textContent = "♡";
+  $("#bookmark-word").classList.toggle("saved", progress?.status === "hard");
+  $("#bookmark-word").textContent = progress?.status === "hard" ? "♥" : "♡";
 }
 
 function updateGoalUI() {
@@ -240,11 +312,18 @@ document.addEventListener("click", event => {
 $("#start-daily").addEventListener("click", openLesson);
 $("#phrase-sound").addEventListener("click", () => speak("コーヒーをください。", state.lessonStep === 1 ? .7 : .88));
 $("#close-lesson").addEventListener("click", () => closeModal("#lesson-modal"));
-$("#next-lesson-step").addEventListener("click", () => {
+$("#next-lesson-step").addEventListener("click", async () => {
   if (state.lessonStep < lessonStages.length - 1) {
     state.lessonStep += 1;
     renderLessonStage();
+    await persist(saveChapterProgress({ chapter_id: "chapter-05", current_step: state.lessonStep, completed: false }));
   } else {
+    state.speakingSentenceCount += 1;
+    await Promise.all([
+      persist(saveChapterProgress({ chapter_id: "chapter-05", current_step: lessonStages.length, completed: true, completed_at: new Date().toISOString() })),
+      persist(saveProfile({ speaking_sentence_count: state.speakingSentenceCount, last_study_date: new Date().toISOString().slice(0, 10) })),
+      persist(saveStudySession({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 1 }))
+    ]);
     closeModal("#lesson-modal");
     showToast("축하해요! 말할 수 있는 문장이 1개 늘었어요. 🎉");
   }
@@ -254,12 +333,38 @@ $("#word-sound").addEventListener("click", () => speak(words[state.wordIndex % w
 $("#flashcard").addEventListener("click", event => {
   if (!event.target.closest("button")) $("#flashcard").classList.toggle("hidden-meaning");
 });
-$("#bookmark-word").addEventListener("click", event => {
+$("#bookmark-word").addEventListener("click", async event => {
   event.currentTarget.classList.toggle("saved");
   event.currentTarget.textContent = event.currentTarget.classList.contains("saved") ? "♥" : "♡";
+  const item = words[state.wordIndex % words.length];
+  const saved = event.currentTarget.classList.contains("saved");
+  state.wordProgress[item.jp] = { ...(state.wordProgress[item.jp] || {}), status: saved ? "hard" : "learning" };
+  await persist(saveWordProgress({
+    word_id: item.jp,
+    status: saved ? "hard" : "learning",
+    correct_count: state.wordProgress[item.jp].correct_count || 0,
+    wrong_count: state.wordProgress[item.jp].wrong_count || 0,
+    last_reviewed_at: new Date().toISOString(),
+    next_review_at: dateAfter(saved ? 1 : 2)
+  }));
   showToast(event.currentTarget.classList.contains("saved") ? "복습 목록에 담았어요." : "복습 목록에서 뺐어요.");
 });
-function nextWord(hard = false) {
+async function nextWord(hard = false) {
+  const item = words[state.wordIndex % words.length];
+  const previous = state.wordProgress[item.jp] || {};
+  const progress = {
+    word_id: item.jp,
+    status: hard ? "hard" : "known",
+    correct_count: (previous.correct_count || 0) + (hard ? 0 : 1),
+    wrong_count: (previous.wrong_count || 0) + (hard ? 1 : 0),
+    last_reviewed_at: new Date().toISOString(),
+    next_review_at: dateAfter(hard ? 1 : 3)
+  };
+  state.wordProgress[item.jp] = progress;
+  await Promise.all([
+    persist(saveWordProgress(progress)),
+    persist(saveStudySession({ words_reviewed: 1, sentences_spoken: 0, chapters_completed: 0 }))
+  ]);
   if (state.wordIndex + 1 >= state.wordGoal) {
     state.wordIndex = 0;
     showToast(hard ? "어려운 단어는 복습에 다시 나와요." : `오늘의 단어 ${state.wordGoal}개를 모두 봤어요!`);
@@ -270,19 +375,21 @@ $("#word-hard").addEventListener("click", () => nextWord(true));
 $("#word-know").addEventListener("click", () => nextWord(false));
 
 function openSettings() { updateGoalUI(); openModal("#settings-modal"); }
-$("#open-settings").addEventListener("click", openSettings);
-$("#mobile-settings").addEventListener("click", openSettings);
+function openProfile() { state.session ? openSettings() : openAuth(); }
+$("#open-settings").addEventListener("click", openProfile);
+$("#mobile-settings").addEventListener("click", openProfile);
 $("#change-goal").addEventListener("click", openSettings);
 $("#close-settings").addEventListener("click", () => closeModal("#settings-modal"));
 $$("[data-goal]").forEach(btn => btn.addEventListener("click", () => {
   state.wordGoal = Number(btn.dataset.goal);
   updateGoalUI();
 }));
-$("#save-settings").addEventListener("click", () => {
+$("#save-settings").addEventListener("click", async () => {
   localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
   state.wordIndex = 0;
+  await persist(saveProfile({ daily_word_goal: state.wordGoal }), state.session ? "클라우드에도 저장했어요." : "");
   updateGoalUI(); renderWord(); closeModal("#settings-modal");
-  showToast(`하루 ${state.wordGoal}개 학습으로 저장했어요.`);
+  if (!state.session) showToast(`하루 ${state.wordGoal}개 학습으로 기기에 저장했어요.`);
 });
 
 $("#review-hint").addEventListener("click", () => $("#hint-text").classList.toggle("show"));
@@ -292,11 +399,85 @@ $("#review-mic").addEventListener("click", event => {
   speechPractice(button, item.answer, transcript => {
     $("#review-result").textContent = `✓ “${transcript}” 잘 전달됐어요!`;
     speak(item.answer);
+    const previous = state.reviewProgress[`review-${state.reviewStep + 1}`] || {};
+    const progress = {
+      review_id: `review-${state.reviewStep + 1}`,
+      repetitions: (previous.repetitions || 0) + 1,
+      ease_factor: previous.ease_factor || 2.5,
+      interval_days: Math.min((previous.interval_days || 1) * 2, 30),
+      next_review_at: dateAfter(Math.min((previous.interval_days || 1) * 2, 30)),
+      last_result: "good"
+    };
+    state.reviewProgress[progress.review_id] = progress;
+    persist(saveReviewProgress(progress));
+    persist(saveStudySession({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 0 }));
     setTimeout(() => {
       state.reviewStep = (state.reviewStep + 1) % reviewItems.length;
       renderReview();
     }, 2300);
   });
+});
+
+function setAuthMode(mode) {
+  state.authMode = mode;
+  $$('[data-auth-mode]').forEach(button => button.classList.toggle("active", button.dataset.authMode === mode));
+  $("#auth-submit").textContent = mode === "login" ? "로그인" : "무료로 시작하기";
+  $("#auth-password").autocomplete = mode === "login" ? "current-password" : "new-password";
+  $("#auth-message").textContent = "";
+  $("#auth-message").classList.remove("success");
+}
+
+function openAuth() {
+  if ($("#settings-modal").classList.contains("open")) closeModal("#settings-modal");
+  setAuthMode("login");
+  $("#auth-form").reset();
+  if (!isCloudConfigured) $("#auth-message").textContent = "Supabase 프로젝트 연결을 마치면 로그인할 수 있어요.";
+  openModal("#auth-modal");
+}
+
+$$('[data-auth-mode]').forEach(button => button.addEventListener("click", () => setAuthMode(button.dataset.authMode)));
+$("#close-auth").addEventListener("click", () => closeModal("#auth-modal"));
+$("#auth-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const email = $("#auth-email").value.trim();
+  const password = $("#auth-password").value;
+  const submit = $("#auth-submit");
+  const message = $("#auth-message");
+  submit.disabled = true;
+  submit.textContent = state.authMode === "login" ? "로그인 중…" : "계정 만드는 중…";
+  message.textContent = "";
+  try {
+    const { data, error } = state.authMode === "login"
+      ? await signIn(email, password)
+      : await signUp(email, password);
+    if (error) throw error;
+    if (state.authMode === "signup" && !data.session) {
+      message.textContent = "이메일로 보낸 인증 링크를 확인해 주세요.";
+      message.classList.add("success");
+      return;
+    }
+    updateAccountUI(data.session);
+    await persist(saveProfile({ daily_word_goal: state.wordGoal, last_study_date: new Date().toISOString().slice(0, 10) }));
+    await hydrateLearningData();
+    closeModal("#auth-modal");
+    showToast(state.authMode === "login" ? "다시 만나서 반가워요! 기록을 불러왔어요." : "가입 완료! 이제 학습 기록이 안전하게 저장돼요.");
+  } catch (error) {
+    console.error(error);
+    message.textContent = error.message?.includes("Invalid login")
+      ? "이메일 또는 비밀번호를 확인해 주세요."
+      : error.message || "잠시 후 다시 시도해 주세요.";
+  } finally {
+    submit.disabled = false;
+    submit.textContent = state.authMode === "login" ? "로그인" : "무료로 시작하기";
+  }
+});
+
+$("#account-action").addEventListener("click", async () => {
+  if (!state.session) return openAuth();
+  await signOut();
+  closeModal("#settings-modal");
+  updateAccountUI(null);
+  showToast("로그아웃했어요. 기기의 임시 기록은 그대로 남아 있어요.");
 });
 
 $$(".modal-backdrop").forEach(backdrop => backdrop.addEventListener("click", event => {
@@ -311,3 +492,20 @@ renderKana();
 renderWord();
 renderReview();
 updateGoalUI();
+
+async function initializeCloud() {
+  if (!isCloudConfigured) {
+    updateAccountUI(null);
+    return;
+  }
+  const session = await getSession();
+  updateAccountUI(session);
+  if (session) await hydrateLearningData();
+  onAuthChange(async nextSession => {
+    const changedUser = nextSession?.user?.id !== state.session?.user?.id;
+    updateAccountUI(nextSession);
+    if (nextSession && changedUser) await hydrateLearningData();
+  });
+}
+
+initializeCloud();
