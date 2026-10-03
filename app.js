@@ -21,6 +21,8 @@ const state = {
   reviewProgress: {},
   studySessions: [],
   weeklyGoalDays: 5,
+  chapterFilter: "all",
+  activeChapterIndex: 0,
   speechRate: Number(localStorage.getItem("easyNihongo.speechRate") || 0.92),
   preferredVoiceURI: localStorage.getItem("easyNihongo.voiceURI") || "",
   japaneseVoices: []
@@ -50,16 +52,16 @@ const words = [
 ];
 
 const chapters = [
-  { icon: "👋", color: "#eef5dc", n: "CHAPTER 01", title: "인사하고 감사하기", desc: "첫 만남에서 자연스럽게 인사해요.", done: true },
-  { icon: "☺", color: "#fff0e9", n: "CHAPTER 02", title: "나를 소개하기", desc: "이름과 출신을 간단히 말해요.", done: true },
-  { icon: "↺", color: "#e8f3f5", n: "CHAPTER 03", title: "다시 물어보기", desc: "놓친 말을 정중하게 다시 물어요.", done: true },
-  { icon: "🛍", color: "#f6eddd", n: "CHAPTER 04", title: "편의점에서 계산하기", desc: "봉투와 결제 방법을 말해요.", done: true },
-  { icon: "☕", color: "#f1e0c7", n: "CHAPTER 05", title: "카페에서 주문하기", desc: "원하는 음료를 자연스럽게 주문해요.", current: true },
-  { icon: "🍜", color: "#fff0dd", n: "CHAPTER 06", title: "식당에서 주문하기", desc: "인원과 메뉴를 정확히 말해요." },
-  { icon: "¥", color: "#e9f4e3", n: "CHAPTER 07", title: "가격과 수량 묻기", desc: "가격을 듣고 필요한 수량을 말해요.", locked: true },
-  { icon: "⌖", color: "#e8eff7", n: "CHAPTER 08", title: "길과 장소 묻기", desc: "목적지까지 가는 길을 물어봐요.", locked: true },
-  { icon: "🚃", color: "#edf0f5", n: "CHAPTER 09", title: "교통수단 이용하기", desc: "표를 사고 목적지를 확인해요.", locked: true },
-  { icon: "＋", color: "#fff0ed", n: "CHAPTER 10", title: "도움 요청하기", desc: "곤란한 상황에서 도움을 요청해요.", locked: true }
+  { icon: "👋", color: "#eef5dc", category: "basic", n: "CHAPTER 01", title: "인사하고 감사하기", desc: "첫 만남에서 자연스럽게 감사 인사를 해요.", place: "첫 만남에서", speaker: "나", phrase: "ありがとうございます。", reading: "ありがとうございます", translation: "감사합니다.", parts: [["ありがとう", "고마워"], ["ございます", "정중한 표현"]], choices: [["おはようございます。", "좋은 아침이에요"], ["ありがとうございます。", "감사합니다"], ["よろしくお願いします。", "잘 부탁합니다"]] },
+  { icon: "☺", color: "#fff0e9", category: "basic", n: "CHAPTER 02", title: "나를 소개하기", desc: "이름과 출신을 간단히 말해요.", place: "처음 만난 사람에게", speaker: "나", phrase: "わたしはミンです。", reading: "わたしは みんです", translation: "저는 민입니다.", parts: [["わたしは", "저는"], ["ミンです", "민입니다"]], choices: [["わたしはミンです。", "저는 민입니다"], ["韓国から来ました。", "한국에서 왔습니다"], ["よろしくお願いします。", "잘 부탁합니다"]] },
+  { icon: "↺", color: "#e8f3f5", category: "basic", n: "CHAPTER 03", title: "다시 물어보기", desc: "놓친 말을 정중하게 다시 물어요.", place: "말을 놓쳤을 때", speaker: "나", phrase: "もう一度お願いします。", reading: "もういちど おねがいします", translation: "한 번 더 부탁합니다.", parts: [["もう一度", "한 번 더"], ["お願いします", "부탁합니다"]], choices: [["もう一度お願いします。", "한 번 더 부탁합니다"], ["ゆっくりお願いします。", "천천히 부탁합니다"], ["すみません。", "실례합니다"]] },
+  { icon: "🛍", color: "#f6eddd", category: "travel", n: "CHAPTER 04", title: "편의점에서 계산하기", desc: "봉투와 결제 방법을 말해요.", place: "편의점 계산대에서", speaker: "손님", phrase: "袋はいりません。", reading: "ふくろは いりません", translation: "봉투는 필요 없습니다.", parts: [["袋は", "봉투는"], ["いりません", "필요 없습니다"]], choices: [["袋はいりません。", "봉투는 필요 없어요"], ["カードでお願いします。", "카드로 부탁합니다"], ["これをください。", "이것을 주세요"]] },
+  { icon: "☕", color: "#f1e0c7", category: "travel", n: "CHAPTER 05", title: "카페에서 주문하기", desc: "원하는 음료를 자연스럽게 주문해요.", place: "카페에서", speaker: "손님", phrase: "コーヒーをください。", reading: "こーひーを ください", translation: "커피를 주세요.", parts: [["コーヒーを", "커피를"], ["ください", "주세요"]], choices: [["水をください。", "물"], ["お茶をください。", "차"], ["コーヒーをください。", "커피"]] },
+  { icon: "🍜", color: "#fff0dd", category: "travel", n: "CHAPTER 06", title: "식당에서 주문하기", desc: "인원과 메뉴를 정확히 말해요.", place: "식당에서", speaker: "손님", phrase: "ラーメンを一つお願いします。", reading: "らーめんを ひとつ おねがいします", translation: "라멘 하나 부탁합니다.", parts: [["ラーメンを一つ", "라멘 하나"], ["お願いします", "부탁합니다"]], choices: [["ラーメンを一つお願いします。", "라멘 하나"], ["水をお願いします。", "물"], ["お会計をお願いします。", "계산"]] },
+  { icon: "¥", color: "#e9f4e3", category: "travel", n: "CHAPTER 07", title: "가격과 수량 묻기", desc: "가격을 듣고 필요한 수량을 말해요.", place: "가게에서", speaker: "손님", phrase: "これはいくらですか。", reading: "これは いくらですか", translation: "이것은 얼마인가요?", parts: [["これは", "이것은"], ["いくらですか", "얼마인가요"]], choices: [["これはいくらですか。", "이것은 얼마예요"], ["二つください。", "두 개 주세요"], ["これをください。", "이것을 주세요"]] },
+  { icon: "⌖", color: "#e8eff7", category: "travel", n: "CHAPTER 08", title: "길과 장소 묻기", desc: "목적지까지 가는 길을 물어봐요.", place: "길을 물을 때", speaker: "나", phrase: "駅はどこですか。", reading: "えきは どこですか", translation: "역은 어디인가요?", parts: [["駅は", "역은"], ["どこですか", "어디인가요"]], choices: [["駅はどこですか。", "역은 어디예요"], ["トイレはどこですか。", "화장실은 어디예요"], ["ここですか。", "여기인가요"]] },
+  { icon: "🚃", color: "#edf0f5", category: "travel", n: "CHAPTER 09", title: "교통수단 이용하기", desc: "표를 사고 목적지를 확인해요.", place: "역 매표소에서", speaker: "승객", phrase: "東京まで一枚お願いします。", reading: "とうきょうまで いちまい おねがいします", translation: "도쿄까지 한 장 부탁합니다.", parts: [["東京まで一枚", "도쿄까지 한 장"], ["お願いします", "부탁합니다"]], choices: [["東京まで一枚お願いします。", "도쿄까지 한 장"], ["大阪までお願いします。", "오사카까지"], ["何番線ですか。", "몇 번 승강장이에요"]] },
+  { icon: "＋", color: "#fff0ed", category: "daily", n: "CHAPTER 10", title: "도움 요청하기", desc: "곤란한 상황에서 도움을 요청해요.", place: "도움이 필요할 때", speaker: "나", phrase: "助けてください。", reading: "たすけて ください", translation: "도와주세요.", parts: [["助けて", "도와"], ["ください", "주세요"]], choices: [["助けてください。", "도와주세요"], ["大丈夫ですか。", "괜찮으세요"], ["すみません。", "실례합니다"]] }
 ];
 
 const kana = {
@@ -201,9 +203,13 @@ async function hydrateLearningData() {
     state.wordProgress = Object.fromEntries(data.words.map(item => [item.word_id, item]));
     state.reviewProgress = Object.fromEntries(data.reviews.map(item => [item.review_id, item]));
     state.studySessions = data.sessions;
+    chapters.forEach(chapter => { chapter.done = false; chapter.currentStep = 0; });
     data.chapters.forEach(item => {
       const index = Number(item.chapter_id.replace("chapter-", "")) - 1;
-      if (chapters[index]) chapters[index].done = item.completed;
+      if (chapters[index]) {
+        chapters[index].done = item.completed;
+        chapters[index].currentStep = item.current_step || 0;
+      }
     });
     localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
     updateGoalUI();
@@ -288,13 +294,44 @@ function navigate(page) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function updateChapterLocks() {
+  chapters.forEach((chapter, index) => {
+    chapter.locked = !chapter.done && index > 0 && chapters.slice(0, index).some(previous => !previous.done);
+    chapter.current = !chapter.done && !chapter.locked;
+  });
+}
+
+function currentChapterIndex() {
+  const index = chapters.findIndex(chapter => !chapter.done && !chapter.locked);
+  const lastDone = chapters.reduce((last, chapter, chapterIndex) => chapter.done ? chapterIndex : last, -1);
+  return index >= 0 ? index : Math.max(lastDone, 0);
+}
+
+function renderHomeLesson() {
+  const index = currentChapterIndex();
+  const chapter = chapters[index];
+  const step = chapter.done ? 4 : (chapter.currentStep || 0);
+  $("#home-lesson-icon").textContent = chapter.icon;
+  $("#home-lesson-number").textContent = chapter.n;
+  $("#home-lesson-title").textContent = chapter.title;
+  $("#home-lesson-desc").textContent = chapter.desc;
+  $("#home-lesson-progress").style.width = `${step / 4 * 100}%`;
+  $("#home-lesson-step").textContent = chapter.done ? "복습할 수 있어요" : `${step} / 4 단계 완료`;
+}
+
 function renderChapters() {
-  $("#chapter-list").innerHTML = chapters.map((chapter, i) => `
-    <button class="chapter-card ${chapter.current ? "current" : ""} ${chapter.locked ? "locked" : ""}" data-chapter="${i}" ${chapter.locked ? "aria-disabled=\"true\"" : ""}>
+  updateChapterLocks();
+  const visibleChapters = chapters.map((chapter, index) => ({ chapter, index }))
+    .filter(({ chapter }) => state.chapterFilter === "all" || chapter.category === state.chapterFilter);
+  $("#chapter-list").innerHTML = visibleChapters.map(({ chapter, index }) => `
+    <button class="chapter-card ${chapter.current ? "current" : ""} ${chapter.locked ? "locked" : ""}" data-chapter="${index}" ${chapter.locked ? "aria-disabled=\"true\"" : ""}>
       <span class="chapter-icon" style="background:${chapter.color}">${chapter.icon}</span>
-      <span><small>${chapter.n}</small><h3>${chapter.title}</h3><p>${chapter.desc}</p></span>
+      <span><small>${chapter.n} · ${chapter.category === "basic" ? "기초" : chapter.category === "travel" ? "여행" : "일상"}</small><h3>${chapter.title}</h3><p>${chapter.desc}</p></span>
       <span class="status">${chapter.done ? "✓" : chapter.locked ? "⌕" : "▶"}</span>
     </button>`).join("");
+  $("#course-completed-count").textContent = chapters.filter(chapter => chapter.done).length;
+  $$('[data-chapter-filter]').forEach(button => button.classList.toggle("active", button.dataset.chapterFilter === state.chapterFilter));
+  renderHomeLesson();
 }
 
 function renderKana() {
@@ -339,18 +376,22 @@ function closeModal(id) {
   speechSynthesis?.cancel();
 }
 
-const lessonStages = [
-  { label: "1단계 · 먼저 들어보세요", coach: "먼저 자연스러운 속도로 들어보세요. 뜻을 완벽히 몰라도 괜찮아요!", interaction: '<p class="listen-note">▶ 버튼을 누르면 원어민 발음으로 들을 수 있어요.</p>', button: "들었어요" },
-  { label: "2단계 · 천천히 따라 해보세요", coach: "문장을 두 덩어리로 나누어 천천히 따라 말해볼까요?", interaction: '<button class="repeat-button" id="practice-mic">● 누르고 따라 말하기</button><p class="practice-feedback" id="lesson-speech-feedback"></p>', button: "말해봤어요", requiresSpeech: true },
-  { label: "3단계 · 단어를 바꿔보세요", coach: "이번에는 커피 대신 물을 주문해 보세요.", interaction: '<div class="choice-row"><button data-choice="水をください。">水 · 물</button><button data-choice="お茶をください。">お茶 · 차</button><button data-choice="これをください。">これ · 이것</button></div>', button: "응용했어요" },
-  { label: "4단계 · 실전처럼 대답하세요", coach: "점원이 주문을 물었어요. 힌트 없이 직접 대답해 보세요!", interaction: '<button class="repeat-button" id="practice-mic">● 눌러서 대답하기</button><p class="practice-feedback" id="lesson-speech-feedback"></p>', button: "챕터 완료", requiresSpeech: true }
-];
+function lessonStagesFor(chapter) {
+  const choices = chapter.choices.map(([phrase, label]) => `<button data-choice="${phrase}">${label}</button>`).join("");
+  return [
+    { label: "1단계 · 먼저 들어보세요", coach: "먼저 자연스러운 속도로 들어보세요. 뜻을 완벽히 몰라도 괜찮아요!", interaction: '<p class="listen-note">▶ 버튼을 누르면 원어민 발음으로 들을 수 있어요.</p>', button: "들었어요" },
+    { label: "2단계 · 천천히 따라 해보세요", coach: "문장을 두 덩어리로 나누어 천천히 따라 말해볼까요?", interaction: '<button class="repeat-button" id="practice-mic">● 누르고 따라 말하기</button><p class="practice-feedback" id="lesson-speech-feedback"></p>', button: "말해봤어요", requiresSpeech: true },
+    { label: "3단계 · 표현을 바꿔 들어보세요", coach: "비슷한 상황에서 쓸 수 있는 표현도 소리 내어 익혀보세요.", interaction: `<div class="choice-row">${choices}</div>`, button: "응용했어요" },
+    { label: "4단계 · 실전처럼 대답하세요", coach: `${chapter.place} 힌트 없이 직접 말해보세요!`, interaction: '<button class="repeat-button" id="practice-mic">● 눌러서 대답하기</button><p class="practice-feedback" id="lesson-speech-feedback"></p>', button: "챕터 완료", requiresSpeech: true }
+  ];
+}
 
 function renderLessonStage() {
-  const stage = lessonStages[state.lessonStep];
+  const stages = lessonStagesFor(chapters[state.activeChapterIndex]);
+  const stage = stages[state.lessonStep];
   $("#lesson-stage-label").textContent = stage.label;
-  $("#lesson-stage-count").textContent = `${state.lessonStep + 1} / ${lessonStages.length}`;
-  $("#lesson-progress-bar").style.width = `${(state.lessonStep + 1) / lessonStages.length * 100}%`;
+  $("#lesson-stage-count").textContent = `${state.lessonStep + 1} / ${stages.length}`;
+  $("#lesson-progress-bar").style.width = `${(state.lessonStep + 1) / stages.length * 100}%`;
   $("#coach-text").textContent = stage.coach;
   $("#lesson-interaction").innerHTML = stage.interaction;
   $("#next-lesson-step").innerHTML = `${stage.button} <span>→</span>`;
@@ -358,8 +399,20 @@ function renderLessonStage() {
   $("#next-lesson-step").disabled = Boolean(stage.requiresSpeech && Recognition);
 }
 
-function openLesson() {
-  state.lessonStep = 0;
+function openLesson(index = currentChapterIndex()) {
+  const chapter = chapters[index];
+  updateChapterLocks();
+  if (chapter.locked) return showToast("앞 챕터를 완료하면 열려요.");
+  state.activeChapterIndex = index;
+  state.lessonStep = chapter.done ? 0 : Math.min(chapter.currentStep || 0, 3);
+  $("#lesson-context-icon").textContent = chapter.icon;
+  $("#lesson-context-place").textContent = chapter.place;
+  $("#lesson-context-prompt").textContent = `${chapter.title} 표현을 직접 말해보세요.`;
+  $("#lesson-speaker").textContent = chapter.speaker;
+  $("#lesson-title").textContent = chapter.phrase;
+  $("#lesson-reading").textContent = chapter.reading;
+  $("#lesson-translation").textContent = chapter.translation;
+  $("#lesson-parts").innerHTML = chapter.parts.map(([phrase, meaning], partIndex) => `${partIndex ? "<i>+</i>" : ""}<span>${phrase}<small>${meaning}</small></span>`).join("");
   renderLessonStage();
   openModal("#lesson-modal");
 }
@@ -434,14 +487,18 @@ document.addEventListener("click", event => {
     setTimeout(() => speakButton.classList.remove("playing"), 500);
   }
 
-  if (event.target.closest("[data-lesson]")) openLesson();
+  const lessonButton = event.target.closest("[data-lesson]");
+  if (lessonButton) openLesson(currentChapterIndex());
 
   const chapter = event.target.closest("[data-chapter]");
   if (chapter) {
-    const data = chapters[Number(chapter.dataset.chapter)];
-    if (data.locked) showToast("앞 챕터를 완료하면 열려요.");
-    else if (data.title.includes("카페")) openLesson();
-    else showToast(data.done ? "복습 모드로 다시 시작할 수 있어요." : "다음 학습으로 곧 만나요!");
+    openLesson(Number(chapter.dataset.chapter));
+  }
+
+  const filter = event.target.closest("[data-chapter-filter]");
+  if (filter) {
+    state.chapterFilter = filter.dataset.chapterFilter;
+    renderChapters();
   }
 
   const kanaTab = event.target.closest("[data-kana-type]");
@@ -461,7 +518,8 @@ document.addEventListener("click", event => {
   if (event.target.closest("#practice-mic")) {
     const button = event.target.closest("#practice-mic");
     const feedback = $("#lesson-speech-feedback");
-    speechPractice(button, "コーヒーをください。", (transcript, match) => {
+    const expected = chapters[state.activeChapterIndex].phrase;
+    speechPractice(button, expected, (transcript, match) => {
       feedback.textContent = `✓ 「${transcript}」 ${match.feedback}`;
       feedback.className = "practice-feedback correct";
       $("#next-lesson-step").disabled = false;
@@ -472,23 +530,31 @@ document.addEventListener("click", event => {
   }
 });
 
-$("#start-daily").addEventListener("click", openLesson);
-$("#phrase-sound").addEventListener("click", () => speak("コーヒーをください。", state.lessonStep === 1 ? .7 : state.speechRate));
+$("#start-daily").addEventListener("click", () => openLesson(currentChapterIndex()));
+$("#phrase-sound").addEventListener("click", () => speak(chapters[state.activeChapterIndex].phrase, state.lessonStep === 1 ? .7 : state.speechRate));
 $("#close-lesson").addEventListener("click", () => closeModal("#lesson-modal"));
 $("#next-lesson-step").addEventListener("click", async () => {
-  if (state.lessonStep < lessonStages.length - 1) {
+  const chapter = chapters[state.activeChapterIndex];
+  const stages = lessonStagesFor(chapter);
+  const chapterId = `chapter-${String(state.activeChapterIndex + 1).padStart(2, "0")}`;
+  if (state.lessonStep < stages.length - 1) {
     state.lessonStep += 1;
+    chapter.currentStep = state.lessonStep;
     renderLessonStage();
-    await persist(saveChapterProgress({ chapter_id: "chapter-05", current_step: state.lessonStep, completed: false }));
+    await persist(saveChapterProgress({ chapter_id: chapterId, current_step: state.lessonStep, completed: false }));
+    renderChapters();
   } else {
     state.speakingSentenceCount += 1;
+    chapter.done = true;
+    chapter.currentStep = stages.length;
     await Promise.all([
-      persist(saveChapterProgress({ chapter_id: "chapter-05", current_step: lessonStages.length, completed: true, completed_at: new Date().toISOString() })),
+      persist(saveChapterProgress({ chapter_id: chapterId, current_step: stages.length, completed: true, completed_at: new Date().toISOString() })),
       persist(saveProfile({ speaking_sentence_count: state.speakingSentenceCount, last_study_date: new Date().toISOString().slice(0, 10) })),
       recordStudyActivity({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 1 })
     ]);
+    renderChapters();
     closeModal("#lesson-modal");
-    showToast("축하해요! 말할 수 있는 문장이 1개 늘었어요. 🎉");
+    showToast(`${chapter.title} 완료! 다음 챕터가 열렸어요. 🎉`);
   }
 });
 
