@@ -19,7 +19,10 @@ const state = {
   wordProgress: {},
   reviewProgress: {},
   studySessions: [],
-  weeklyGoalDays: 5
+  weeklyGoalDays: 5,
+  speechRate: Number(localStorage.getItem("easyNihongo.speechRate") || 0.92),
+  preferredVoiceURI: localStorage.getItem("easyNihongo.voiceURI") || "",
+  japaneseVoices: []
 };
 
 const words = [
@@ -216,14 +219,64 @@ async function hydrateLearningData() {
   }
 }
 
-function speak(text, rate = 0.88) {
+function voiceQualityScore(voice) {
+  const name = voice.name.toLowerCase();
+  let score = voice.lang.toLowerCase() === "ja-jp" ? 100 : 60;
+  if (/premium|enhanced|natural|neural|online/.test(name)) score += 50;
+  if (/siri|google|microsoft/.test(name)) score += 35;
+  if (/kyoko/.test(name)) score += 60;
+  else if (/nanami|keita|otoya/.test(name)) score += 50;
+  else if (/o-ren/.test(name)) score += 35;
+  else if (/hattori/.test(name)) score += 10;
+  if (/compact|espeak/.test(name)) score -= 40;
+  if (voice.default) score += 5;
+  return score;
+}
+
+function refreshJapaneseVoices() {
+  if (!("speechSynthesis" in window)) return;
+  state.japaneseVoices = speechSynthesis.getVoices()
+    .filter(voice => voice.lang?.toLowerCase().startsWith("ja"))
+    .sort((a, b) => voiceQualityScore(b) - voiceQualityScore(a));
+  const select = $("#voice-select");
+  if (!select) return;
+  select.replaceChildren(
+    new Option("자동 선택 · 추천 음성", ""),
+    ...state.japaneseVoices.map(voice => new Option(`${voice.name} · ${voice.lang}`, voice.voiceURI))
+  );
+  if (state.japaneseVoices.some(voice => voice.voiceURI === state.preferredVoiceURI)) select.value = state.preferredVoiceURI;
+  else state.preferredVoiceURI = "";
+  updateVoiceStatus();
+}
+
+function selectedJapaneseVoice() {
+  return state.japaneseVoices.find(voice => voice.voiceURI === state.preferredVoiceURI) || state.japaneseVoices[0] || null;
+}
+
+function updateVoiceStatus() {
+  const status = $("#voice-status");
+  if (!status) return;
+  const voice = selectedJapaneseVoice();
+  status.textContent = voice
+    ? `${voice.name} 음성을 사용해요.`
+    : "기기의 기본 일본어 음성을 사용해요. OS에 고품질 일본어 음성을 추가하면 더 자연스러워져요.";
+  $$('[data-speech-rate]').forEach(button => button.classList.toggle("selected", Number(button.dataset.speechRate) === state.speechRate));
+}
+
+function speak(text, rate) {
   if (!("speechSynthesis" in window)) return showToast("이 브라우저에서는 음성 재생을 지원하지 않아요.");
   speechSynthesis.cancel();
   const utterance = new SpeechSynthesisUtterance(text);
   utterance.lang = "ja-JP";
-  utterance.rate = rate;
-  const voice = speechSynthesis.getVoices().find(v => v.lang?.toLowerCase().startsWith("ja"));
+  const isShortExpression = text.replace(/[。、！？\s]/g, "").length <= 8;
+  const requestedRate = rate ?? (isShortExpression ? Math.min(state.speechRate, 0.82) : state.speechRate);
+  utterance.rate = Math.min(Math.max(Number(requestedRate) || 0.92, 0.6), 1.1);
+  utterance.pitch = 1;
+  utterance.volume = 1;
+  if (!state.japaneseVoices.length) refreshJapaneseVoices();
+  const voice = selectedJapaneseVoice();
   if (voice) utterance.voice = voice;
+  utterance.onerror = () => showToast("음성을 재생하지 못했어요. 다른 음성을 선택해 보세요.");
   speechSynthesis.speak(utterance);
 }
 
@@ -244,7 +297,7 @@ function renderChapters() {
 }
 
 function renderKana() {
-  $("#kana-grid").innerHTML = kana[state.kanaType].map(([symbol, roman]) => `<button class="kana-item" data-speak="${symbol}"><b>${symbol}</b><small>${roman}</small></button>`).join("");
+  $("#kana-grid").innerHTML = kana[state.kanaType].map(([symbol, roman]) => `<button class="kana-item" data-speak="${symbol}" data-rate="0.7"><b>${symbol}</b><small>${roman}</small></button>`).join("");
 }
 
 function renderWord() {
@@ -348,7 +401,7 @@ document.addEventListener("click", event => {
 
   const speakButton = event.target.closest("[data-speak]");
   if (speakButton) {
-    speak(speakButton.dataset.speak);
+    speak(speakButton.dataset.speak, speakButton.dataset.rate ? Number(speakButton.dataset.rate) : undefined);
     speakButton.classList.add("playing");
     setTimeout(() => speakButton.classList.remove("playing"), 500);
   }
@@ -384,7 +437,7 @@ document.addEventListener("click", event => {
 });
 
 $("#start-daily").addEventListener("click", openLesson);
-$("#phrase-sound").addEventListener("click", () => speak("コーヒーをください。", state.lessonStep === 1 ? .7 : .88));
+$("#phrase-sound").addEventListener("click", () => speak("コーヒーをください。", state.lessonStep === 1 ? .7 : state.speechRate));
 $("#close-lesson").addEventListener("click", () => closeModal("#lesson-modal"));
 $("#next-lesson-step").addEventListener("click", async () => {
   if (state.lessonStep < lessonStages.length - 1) {
@@ -448,7 +501,7 @@ async function nextWord(hard = false) {
 $("#word-hard").addEventListener("click", () => nextWord(true));
 $("#word-know").addEventListener("click", () => nextWord(false));
 
-function openSettings() { updateGoalUI(); openModal("#settings-modal"); }
+function openSettings() { updateGoalUI(); refreshJapaneseVoices(); updateVoiceStatus(); openModal("#settings-modal"); }
 function openProfile() { state.session ? openSettings() : openAuth(); }
 $("#open-settings").addEventListener("click", openProfile);
 $("#mobile-settings").addEventListener("click", openProfile);
@@ -458,6 +511,17 @@ $$("[data-goal]").forEach(btn => btn.addEventListener("click", () => {
   state.wordGoal = Number(btn.dataset.goal);
   updateGoalUI();
 }));
+$("#voice-select").addEventListener("change", event => {
+  state.preferredVoiceURI = event.target.value;
+  localStorage.setItem("easyNihongo.voiceURI", state.preferredVoiceURI);
+  updateVoiceStatus();
+});
+$$('[data-speech-rate]').forEach(button => button.addEventListener("click", () => {
+  state.speechRate = Number(button.dataset.speechRate);
+  localStorage.setItem("easyNihongo.speechRate", String(state.speechRate));
+  updateVoiceStatus();
+}));
+$("#voice-preview").addEventListener("click", () => speak("こんにちは。いっしょに練習しましょう。", state.speechRate));
 $("#save-settings").addEventListener("click", async () => {
   localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
   state.wordIndex = 0;
@@ -610,6 +674,8 @@ renderWord();
 renderReview();
 updateGoalUI();
 renderWeeklyGoal();
+refreshJapaneseVoices();
+if ("speechSynthesis" in window) speechSynthesis.addEventListener("voiceschanged", refreshJapaneseVoices);
 
 async function initializeCloud() {
   if (!isCloudConfigured) {
