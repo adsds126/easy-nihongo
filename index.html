@@ -44,7 +44,7 @@
 
         <section class="page active" data-page="home">
           <div class="topbar">
-            <div><p class="eyebrow">10월 3일 토요일</p><h1>おはよう! 오늘도 한마디 해볼까요?</h1></div>
+            <div><p class="eyebrow" id="home-date"></p><h1>おはよう! 오늘도 한마디 해볼까요?</h1></div>
             <button class="icon-button" aria-label="알림"><span>♧</span><i></i></button>
           </div>
 
@@ -60,18 +60,18 @@
                 <button class="primary-button" id="start-daily">오늘 학습 시작 <span>→</span></button>
               </div>
               <div class="progress-visual">
-                <div class="progress-ring" style="--progress: 36"><span><b>36%</b><small>이번 주</small></span></div>
+                <div class="progress-ring" id="weekly-progress-ring" style="--progress: 0"><span><b id="weekly-progress-percent">0%</b><small>이번 주</small></span></div>
                 <div class="speech-bubble">いっしょに<br />がんばろう!</div>
                 <div class="mascot" aria-label="초록색 새 마스코트"><span class="mascot-eye left"></span><span class="mascot-eye right"></span><span class="mascot-beak"></span><span class="mascot-wing"></span></div>
               </div>
             </article>
 
             <article class="goal-card">
-              <div class="card-heading"><div><span class="section-icon coral">◎</span><strong>이번 주 목표</strong></div><span>3 / 5일</span></div>
-              <div class="week-days">
-                <div class="done"><span>월</span><b>✓</b></div><div class="done"><span>화</span><b>✓</b></div><div class="done"><span>수</span><b>✓</b></div><div class="today"><span>목</span><b>4</b></div><div><span>금</span><b>5</b></div><div><span>토</span><b>6</b></div><div><span>일</span><b>7</b></div>
-              </div>
-              <p><span>あと2日!</span> 이틀만 더 학습하면 목표 달성이에요.</p>
+              <div class="card-heading"><div><span class="section-icon coral">◎</span><strong>이번 주 학습 목표</strong></div><span id="weekly-goal-count">0 / 5일</span></div>
+              <p class="week-range" id="week-range"></p>
+              <div class="week-days" id="week-days"></div>
+              <div class="week-legend"><span><i class="done-dot"></i>학습 완료</span><span><i class="today-dot"></i>오늘</span></div>
+              <div class="week-summary"><strong id="weekly-goal-message">이번 주 첫 학습을 시작해 보세요</strong><small id="weekly-goal-detail">단어·회화·말하기 중 하나를 학습하면 하루가 기록돼요.</small></div>
             </article>
           </div>
 

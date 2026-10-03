@@ -117,23 +117,31 @@ export function onAuthChange(callback) {
   return data.subscription;
 }
 
-export async function loadLearningData() {
+export async function loadLearningData({ weekStart, weekEnd } = {}) {
   const user = await currentUser();
-  if (!user) return { profile: localProfile(), chapters: [], words: [], reviews: [] };
+  if (!user) return { profile: localProfile(), chapters: [], words: [], reviews: [], sessions: [] };
 
-  const [profile, chapters, words, reviews] = await Promise.all([
+  let sessionsQuery = db.from("study_sessions")
+    .select("study_date, words_reviewed, sentences_spoken, chapters_completed")
+    .order("study_date", { ascending: true });
+  if (weekStart) sessionsQuery = sessionsQuery.gte("study_date", weekStart);
+  if (weekEnd) sessionsQuery = sessionsQuery.lte("study_date", weekEnd);
+
+  const [profile, chapters, words, reviews, sessions] = await Promise.all([
     db.from("profiles").select("*").eq("user_id", user.id).maybeSingle(),
     db.from("chapter_progress").select("*").eq("user_id", user.id),
     db.from("word_progress").select("*").eq("user_id", user.id),
-    db.from("review_progress").select("*").eq("user_id", user.id)
+    db.from("review_progress").select("*").eq("user_id", user.id),
+    sessionsQuery
   ]);
-  const error = [profile, chapters, words, reviews].find(result => result.error)?.error;
+  const error = [profile, chapters, words, reviews, sessions].find(result => result.error)?.error;
   if (error) throw error;
   return {
     profile: profile.data || localProfile(),
     chapters: chapters.data || [],
     words: words.data || [],
-    reviews: reviews.data || []
+    reviews: reviews.data || [],
+    sessions: sessions.data || []
   };
 }
 

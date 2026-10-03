@@ -17,7 +17,9 @@ const state = {
   pendingSignupEmail: "",
   speakingSentenceCount: 0,
   wordProgress: {},
-  reviewProgress: {}
+  reviewProgress: {},
+  studySessions: [],
+  weeklyGoalDays: 5
 };
 
 const words = [
@@ -106,6 +108,71 @@ function dateAfter(days) {
   return date.toISOString();
 }
 
+function localDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function getWeekDates(today = new Date()) {
+  const monday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return date;
+  });
+}
+
+function renderWeeklyGoal() {
+  const today = new Date();
+  const todayKey = localDateKey(today);
+  const weekDates = getWeekDates(today);
+  const completedDates = new Set(state.studySessions
+    .filter(session => Number(session.words_reviewed) + Number(session.sentences_spoken) + Number(session.chapters_completed) > 0)
+    .map(session => session.study_date));
+  const completed = weekDates.filter(date => completedDates.has(localDateKey(date))).length;
+  const goal = state.weeklyGoalDays;
+  const remaining = Math.max(goal - completed, 0);
+  const progress = Math.min(Math.round((completed / goal) * 100), 100);
+  const dayLabels = ["월", "화", "수", "목", "금", "토", "일"];
+
+  $("#home-date").textContent = new Intl.DateTimeFormat("ko-KR", {
+    month: "long", day: "numeric", weekday: "long"
+  }).format(today);
+  $("#week-range").textContent = `${weekDates[0].getMonth() + 1}월 ${weekDates[0].getDate()}일 – ${weekDates[6].getMonth() + 1}월 ${weekDates[6].getDate()}일 · 주 5일 목표`;
+  $("#week-days").innerHTML = weekDates.map((date, index) => {
+    const key = localDateKey(date);
+    const done = completedDates.has(key);
+    const isToday = key === todayKey;
+    const isPast = date < new Date(today.getFullYear(), today.getMonth(), today.getDate());
+    const classes = [done ? "done" : "", isToday ? "today" : "", isPast && !done ? "missed" : ""].filter(Boolean).join(" ");
+    return `<div class="${classes}" aria-label="${date.getMonth() + 1}월 ${date.getDate()}일 ${done ? "학습 완료" : isToday ? "오늘, 아직 학습 전" : "학습 기록 없음"}"><span>${dayLabels[index]}</span><b>${done ? "✓" : isPast ? "–" : date.getDate()}</b><small>${done ? "완료" : isToday ? "오늘" : ""}</small></div>`;
+  }).join("");
+  $("#weekly-goal-count").textContent = `${completed} / ${goal}일`;
+  $("#weekly-progress-percent").textContent = `${progress}%`;
+  $("#weekly-progress-ring").style.setProperty("--progress", progress);
+
+  if (completed >= goal) {
+    $("#weekly-goal-message").textContent = "이번 주 목표를 달성했어요!";
+    $("#weekly-goal-detail").textContent = `${completed}일 동안 꾸준히 일본어를 말했어요.`;
+  } else if (completed === 0) {
+    $("#weekly-goal-message").textContent = "이번 주 첫 학습을 시작해 보세요";
+    $("#weekly-goal-detail").textContent = "단어·회화·말하기 중 하나를 학습하면 하루가 기록돼요.";
+  } else {
+    $("#weekly-goal-message").textContent = `목표까지 ${remaining}일 남았어요`;
+    $("#weekly-goal-detail").textContent = `이번 주 ${completed}일 학습했어요. 하루 한 번만 기록해도 충분해요.`;
+  }
+}
+
+function recordStudyActivity(payload) {
+  const session = { ...payload, study_date: localDateKey() };
+  state.studySessions.push(session);
+  renderWeeklyGoal();
+  return persist(saveStudySession(session));
+}
+
 function updateAccountUI(session) {
   state.session = session;
   const email = session?.user?.email || "";
@@ -121,13 +188,15 @@ function updateAccountUI(session) {
 async function hydrateLearningData() {
   document.body.classList.add("syncing");
   try {
-    const data = await loadLearningData();
+    const weekDates = getWeekDates();
+    const data = await loadLearningData({ weekStart: localDateKey(weekDates[0]), weekEnd: localDateKey(weekDates[6]) });
     if (data.profile?.daily_word_goal) state.wordGoal = data.profile.daily_word_goal;
     state.speakingSentenceCount = data.profile?.speaking_sentence_count || 0;
     if (data.profile?.full_name) $('[data-user-name]').textContent = data.profile.full_name;
     $$('[data-streak]').forEach(el => el.textContent = data.profile?.streak || 0);
     state.wordProgress = Object.fromEntries(data.words.map(item => [item.word_id, item]));
     state.reviewProgress = Object.fromEntries(data.reviews.map(item => [item.review_id, item]));
+    state.studySessions = data.sessions;
     data.chapters.forEach(item => {
       const index = Number(item.chapter_id.replace("chapter-", "")) - 1;
       if (chapters[index]) chapters[index].done = item.completed;
@@ -136,6 +205,7 @@ async function hydrateLearningData() {
     updateGoalUI();
     renderWord();
     renderChapters();
+    renderWeeklyGoal();
     const synced = await flushPendingActions();
     if (synced) showToast(`기기에 저장된 기록 ${synced}개를 동기화했어요.`);
   } catch (error) {
@@ -326,7 +396,7 @@ $("#next-lesson-step").addEventListener("click", async () => {
     await Promise.all([
       persist(saveChapterProgress({ chapter_id: "chapter-05", current_step: lessonStages.length, completed: true, completed_at: new Date().toISOString() })),
       persist(saveProfile({ speaking_sentence_count: state.speakingSentenceCount, last_study_date: new Date().toISOString().slice(0, 10) })),
-      persist(saveStudySession({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 1 }))
+      recordStudyActivity({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 1 })
     ]);
     closeModal("#lesson-modal");
     showToast("축하해요! 말할 수 있는 문장이 1개 늘었어요. 🎉");
@@ -367,7 +437,7 @@ async function nextWord(hard = false) {
   state.wordProgress[item.jp] = progress;
   await Promise.all([
     persist(saveWordProgress(progress)),
-    persist(saveStudySession({ words_reviewed: 1, sentences_spoken: 0, chapters_completed: 0 }))
+    recordStudyActivity({ words_reviewed: 1, sentences_spoken: 0, chapters_completed: 0 })
   ]);
   if (state.wordIndex + 1 >= state.wordGoal) {
     state.wordIndex = 0;
@@ -414,7 +484,7 @@ $("#review-mic").addEventListener("click", event => {
     };
     state.reviewProgress[progress.review_id] = progress;
     persist(saveReviewProgress(progress));
-    persist(saveStudySession({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 0 }));
+    recordStudyActivity({ words_reviewed: 0, sentences_spoken: 1, chapters_completed: 0 });
     setTimeout(() => {
       state.reviewStep = (state.reviewStep + 1) % reviewItems.length;
       renderReview();
@@ -539,6 +609,7 @@ renderKana();
 renderWord();
 renderReview();
 updateGoalUI();
+renderWeeklyGoal();
 
 async function initializeCloud() {
   if (!isCloudConfigured) {
