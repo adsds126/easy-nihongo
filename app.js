@@ -68,11 +68,31 @@ const chapters = [
   { icon: "●", color: "#f6eddd", category: "daily", n: "CHAPTER 14", title: "지금 하는 일 말하기 · ～ている", desc: "～ています로 지금 하는 행동을 말해요.", place: "지금 무엇을 하는지 말할 때", speaker: "나", phrase: "日本語を勉強しています。", reading: "にほんごを べんきょうしています", translation: "일본어를 공부하고 있어요.", pattern: "동사 て형 + います(이마스)", grammar: "～ている는 ‘하고 있다’예요. 정중한 회화에서는 ～ています로 말해요.", parts: [["日本語を", "일본어를"], ["勉強しています", "공부하고 있어요"]], choices: [["日本語を勉強しています。", "일본어를 공부하고 있어요"], ["いま食べています。", "지금 먹고 있어요"], ["音楽を聞いています。", "음악을 듣고 있어요"]] }
 ];
 
-const kana = {
-  hira: [["あ","a"],["い","i"],["う","u"],["え","e"],["お","o"],["か","ka"],["き","ki"],["く","ku"],["け","ke"],["こ","ko"],["さ","sa"],["し","shi"],["す","su"],["せ","se"],["そ","so"],["た","ta"],["ち","chi"],["つ","tsu"],["て","te"],["と","to"],["な","na"],["に","ni"],["ぬ","nu"],["ね","ne"],["の","no"],["は","ha"],["ひ","hi"],["ふ","fu"],["へ","he"],["ほ","ho"],["ま","ma"],["み","mi"],["む","mu"],["め","me"],["も","mo"],["や","ya"],["ゆ","yu"],["よ","yo"],["ら","ra"],["り","ri"]],
-  kata: [["ア","a"],["イ","i"],["ウ","u"],["エ","e"],["オ","o"],["カ","ka"],["キ","ki"],["ク","ku"],["ケ","ke"],["コ","ko"],["サ","sa"],["シ","shi"],["ス","su"],["セ","se"],["ソ","so"],["タ","ta"],["チ","chi"],["ツ","tsu"],["テ","te"],["ト","to"],["ナ","na"],["ニ","ni"],["ヌ","nu"],["ネ","ne"],["ノ","no"],["ハ","ha"],["ヒ","hi"],["フ","fu"],["ヘ","he"],["ホ","ho"],["マ","ma"],["ミ","mi"],["ム","mu"],["メ","me"],["モ","mo"],["ヤ","ya"],["ユ","yu"],["ヨ","yo"],["ラ","ra"],["リ","ri"]],
-  mix: [["シ","shi"],["ツ","tsu"],["ソ","so"],["ン","n"],["さ","sa"],["ち","chi"],["ぬ","nu"],["め","me"],["れ","re"],["わ","wa"]]
+const kanaColumns = [
+  { label: "あ행", hira: [["あ","아","a"],["い","이","i"],["う","우","u"],["え","에","e"],["お","오","o"]], kata: [["ア","아","a"],["イ","이","i"],["ウ","우","u"],["エ","에","e"],["オ","오","o"]] },
+  { label: "か행", hira: [["か","카","ka"],["き","키","ki"],["く","쿠","ku"],["け","케","ke"],["こ","코","ko"]], kata: [["カ","카","ka"],["キ","키","ki"],["ク","쿠","ku"],["ケ","케","ke"],["コ","코","ko"]] },
+  { label: "さ행", hira: [["さ","사","sa"],["し","시","shi"],["す","스","su"],["せ","세","se"],["そ","소","so"]], kata: [["サ","사","sa"],["シ","시","shi"],["ス","스","su"],["セ","세","se"],["ソ","소","so"]] },
+  { label: "た행", hira: [["た","타","ta"],["ち","치","chi"],["つ","츠","tsu"],["て","테","te"],["と","토","to"]], kata: [["タ","타","ta"],["チ","치","chi"],["ツ","츠","tsu"],["テ","테","te"],["ト","토","to"]] },
+  { label: "な행", hira: [["な","나","na"],["に","니","ni"],["ぬ","누","nu"],["ね","네","ne"],["の","노","no"]], kata: [["ナ","나","na"],["ニ","니","ni"],["ヌ","누","nu"],["ネ","네","ne"],["ノ","노","no"]] },
+  { label: "は행", hira: [["は","하","ha"],["ひ","히","hi"],["ふ","후","fu"],["へ","헤","he"],["ほ","호","ho"]], kata: [["ハ","하","ha"],["ヒ","히","hi"],["フ","후","fu"],["ヘ","헤","he"],["ホ","호","ho"]] },
+  { label: "ま행", hira: [["ま","마","ma"],["み","미","mi"],["む","무","mu"],["め","메","me"],["も","모","mo"]], kata: [["マ","마","ma"],["ミ","미","mi"],["ム","무","mu"],["メ","메","me"],["モ","모","mo"]] },
+  { label: "や행", hira: [["や","야","ya"],null,["ゆ","유","yu"],null,["よ","요","yo"]], kata: [["ヤ","야","ya"],null,["ユ","유","yu"],null,["ヨ","요","yo"]] },
+  { label: "ら행", hira: [["ら","라","ra"],["り","리","ri"],["る","루","ru"],["れ","레","re"],["ろ","로","ro"]], kata: [["ラ","라","ra"],["リ","리","ri"],["ル","루","ru"],["レ","레","re"],["ロ","로","ro"]] },
+  { label: "わ행", hira: [["わ","와","wa"],null,null,null,["を","오","wo"]], kata: [["ワ","와","wa"],null,null,null,["ヲ","오","wo"]] },
+  { label: "ん", hira: [["ん","응","n"],null,null,null,null], kata: [["ン","응","n"],null,null,null,null] }
+];
+
+const voicedKana = {
+  hira: [["が","가","ga"],["ぎ","기","gi"],["ぐ","구","gu"],["げ","게","ge"],["ご","고","go"],["ざ","자","za"],["じ","지","ji"],["ず","즈","zu"],["ぜ","제","ze"],["ぞ","조","zo"],["だ","다","da"],["ぢ","지","ji"],["づ","즈","zu"],["で","데","de"],["ど","도","do"],["ば","바","ba"],["び","비","bi"],["ぶ","부","bu"],["べ","베","be"],["ぼ","보","bo"],["ぱ","파","pa"],["ぴ","피","pi"],["ぷ","푸","pu"],["ぺ","페","pe"],["ぽ","포","po"]],
+  kata: [["ガ","가","ga"],["ギ","기","gi"],["グ","구","gu"],["ゲ","게","ge"],["ゴ","고","go"],["ザ","자","za"],["ジ","지","ji"],["ズ","즈","zu"],["ゼ","제","ze"],["ゾ","조","zo"],["ダ","다","da"],["ヂ","지","ji"],["ヅ","즈","zu"],["デ","데","de"],["ド","도","do"],["バ","바","ba"],["ビ","비","bi"],["ブ","부","bu"],["ベ","베","be"],["ボ","보","bo"],["パ","파","pa"],["ピ","피","pi"],["プ","푸","pu"],["ペ","페","pe"],["ポ","포","po"]]
 };
+
+const contractedKana = {
+  hira: [["きゃ","캬","kya"],["きゅ","큐","kyu"],["きょ","쿄","kyo"],["しゃ","샤","sha"],["しゅ","슈","shu"],["しょ","쇼","sho"],["ちゃ","챠","cha"],["ちゅ","츄","chu"],["ちょ","쵸","cho"],["にゃ","냐","nya"],["にゅ","뉴","nyu"],["にょ","뇨","nyo"],["ひゃ","햐","hya"],["ひゅ","휴","hyu"],["ひょ","효","hyo"],["みゃ","먀","mya"],["みゅ","뮤","myu"],["みょ","묘","myo"],["りゃ","랴","rya"],["りゅ","류","ryu"],["りょ","료","ryo"],["ぎゃ","갸","gya"],["ぎゅ","규","gyu"],["ぎょ","교","gyo"],["じゃ","쟈","ja"],["じゅ","쥬","ju"],["じょ","죠","jo"],["びゃ","뱌","bya"],["びゅ","뷰","byu"],["びょ","뵤","byo"],["ぴゃ","퍄","pya"],["ぴゅ","퓨","pyu"],["ぴょ","표","pyo"]],
+  kata: [["キャ","캬","kya"],["キュ","큐","kyu"],["キョ","쿄","kyo"],["シャ","샤","sha"],["シュ","슈","shu"],["ショ","쇼","sho"],["チャ","챠","cha"],["チュ","츄","chu"],["チョ","쵸","cho"],["ニャ","냐","nya"],["ニュ","뉴","nyu"],["ニョ","뇨","nyo"],["ヒャ","햐","hya"],["ヒュ","휴","hyu"],["ヒョ","효","hyo"],["ミャ","먀","mya"],["ミュ","뮤","myu"],["ミョ","묘","myo"],["リャ","랴","rya"],["リュ","류","ryu"],["リョ","료","ryo"],["ギャ","갸","gya"],["ギュ","규","gyu"],["ギョ","교","gyo"],["ジャ","쟈","ja"],["ジュ","쥬","ju"],["ジョ","죠","jo"],["ビャ","뱌","bya"],["ビュ","뷰","byu"],["ビョ","뵤","byo"],["ピャ","퍄","pya"],["ピュ","퓨","pyu"],["ピョ","표","pyo"]]
+};
+
+const confusingKana = [["シ","시","shi"],["ツ","츠","tsu"],["ソ","소","so"],["ン","응","n"],["さ","사","sa"],["ち","치","chi"],["ぬ","누","nu"],["め","메","me"],["れ","레","re"],["わ","와","wa"]];
 
 const reviewItems = [
   { prompt: "“커피를 한 잔 주문해 보세요.”", hint: "コーヒーを ___。", answer: "コーヒーをください。" },
@@ -344,7 +364,27 @@ function renderChapters() {
 }
 
 function renderKana() {
-  $("#kana-grid").innerHTML = kana[state.kanaType].map(([symbol, roman]) => `<button class="kana-item" data-speak="${symbol}" data-rate="0.7"><b>${symbol}</b><small>${roman}</small></button>`).join("");
+  const kanaButton = (item, script = "") => item
+    ? `<button class="kana-item" data-script="${script}" data-speak="${item[0]}" data-rate="0.7"><b>${item[0]}</b><span>${item[1]}</span><small>${item[2]}</small></button>`
+    : '<span class="kana-empty" aria-hidden="true"></span>';
+
+  if (state.kanaType === "hira" || state.kanaType === "kata") {
+    const rowLabels = ["あ단", "い단", "う단", "え단", "お단"];
+    const header = `<span class="kana-corner"></span>${kanaColumns.map(column => `<strong class="kana-column-label">${column.label}</strong>`).join("")}`;
+    const rows = rowLabels.map((label, rowIndex) => `<strong class="kana-row-label">${label}</strong>${kanaColumns.map(column => kanaButton(column[state.kanaType][rowIndex], state.kanaType)).join("")}`).join("");
+    const title = state.kanaType === "hira" ? "히라가나 기본 46자" : "가타카나 기본 46자";
+    $("#kana-grid").innerHTML = `<div class="kana-table-heading"><div><strong>${title}</strong><span>글자를 누르면 발음을 들을 수 있어요.</span></div><em>기본 46자</em></div><div class="kana-table-scroll"><div class="kana-table">${header}${rows}</div></div>`;
+    return;
+  }
+
+  const renderSpecialSection = (title, items, script) => `<section class="kana-special-section"><div><strong>${title}</strong><span>${items.length}자</span></div><div class="kana-special-grid">${items.map(item => kanaButton(item, script)).join("")}</div></section>`;
+  if (state.kanaType === "voiced") {
+    $("#kana-grid").innerHTML = `<p class="kana-guide"><b>탁점 ゛</b>과 <b>반탁점 ゜</b>이 붙으면 소리가 달라져요.</p>${renderSpecialSection("히라가나 탁음·반탁음", voicedKana.hira, "hira")}${renderSpecialSection("가타카나 탁음·반탁음", voicedKana.kata, "kata")}`;
+  } else if (state.kanaType === "contracted") {
+    $("#kana-grid").innerHTML = `<p class="kana-guide">작은 <b>ゃ·ゅ·ょ / ャ·ュ·ョ</b>를 붙여 한 박자로 읽어요.</p>${renderSpecialSection("히라가나 요음", contractedKana.hira, "hira")}${renderSpecialSection("가타카나 요음", contractedKana.kata, "kata")}`;
+  } else {
+    $("#kana-grid").innerHTML = `<p class="kana-guide">모양이 비슷한 글자를 번갈아 눌러 소리와 함께 구별해 보세요.</p><div class="kana-special-grid confusing">${confusingKana.map(item => kanaButton(item)).join("")}</div>`;
+  }
 }
 
 function renderWord() {
