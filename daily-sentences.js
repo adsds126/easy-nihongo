@@ -1,4 +1,4 @@
-export const dailySentences = [
+const videoExpressions = [
   { id: "video-01", order: 1, category: "말문 열기", jp: "あの", reading: "あの", ko: "저기요 / 음…" },
   { id: "video-02", order: 2, category: "말문 열기", jp: "えっと", reading: "えっと", ko: "음… 그러니까…" },
   { id: "video-03", order: 3, category: "말문 열기", jp: "まあ", reading: "まあ", ko: "뭐, 그게…" },
@@ -45,3 +45,16 @@ export const dailySentences = [
   { id: "video-44", order: 44, category: "연결·부탁", jp: "さて", reading: "さて", ko: "자, 그럼 / 그런데" },
   { id: "video-45", order: 45, category: "연결·부탁", jp: "なんとなく", reading: "なんとなく", ko: "왠지 / 그냥" }
 ];
+
+const videoExpressionRomaji = [
+  "ano", "etto", "maa", "nanka", "sou desu ne", "jitsu wa", "to iu ka", "tokoro de", "sou ieba", "chinami ni",
+  "yappari", "ichiou", "toriaezu", "shoujiki iu to", "sumimasen ga", "ee", "uun", "tsumari", "tatoeba", "mochiron",
+  "tashika ni", "naruhodo", "chotto matte kudasai", "yokattara", "otesuu desu ga", "sekkaku na node", "dochira ka to iu to", "tonikaku", "nante iu ka", "bucchake",
+  "jaa", "sore de", "demo", "dakara", "shikamo", "tada", "to iu yori", "moshikashite", "douyara", "a, sou da",
+  "hitokoto de iu to", "waruin da kedo", "onegai ga arun desu ga", "sate", "nantonaku"
+];
+
+export const dailySentences = videoExpressions.map((item, index) => ({
+  ...item,
+  romaji: videoExpressionRomaji[index]
+}));

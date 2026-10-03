@@ -7,7 +7,8 @@ assert.equal(new Set(dailySentences.map(item => item.jp)).size, dailySentences.l
 dailySentences.forEach((item, index) => {
   assert.equal(item.id, `video-${String(index + 1).padStart(2, "0")}`);
   assert.equal(item.order, index + 1);
-  assert.ok(item.category && item.jp && item.reading && item.ko);
+  assert.ok(item.category && item.jp && item.reading && item.romaji && item.ko);
+  assert.match(item.romaji, /[a-z]/i);
 });
 assert.deepEqual(
   dailySentences.map(item => item.jp),
