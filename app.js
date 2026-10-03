@@ -1,5 +1,5 @@
 import {
-  isCloudConfigured, signUp, signIn, signOut, verifyEmailOtp, resendSignupOtp, getSession, onAuthChange,
+  isCloudConfigured, signUp, signIn, signOut, resendSignupEmail, getSession, onAuthChange,
   loadLearningData, flushPendingActions, saveProfile, saveChapterProgress,
   saveWordProgress, saveReviewProgress, saveStudySession
 } from "./data-service.js";
@@ -14,7 +14,7 @@ const state = {
   session: null,
   authMode: "login",
   authRequired: false,
-  pendingSignup: null,
+  pendingSignupEmail: "",
   speakingSentenceCount: 0,
   wordProgress: {},
   reviewProgress: {}
@@ -436,17 +436,16 @@ function setAuthMode(mode) {
 
 function showCredentialsStep() {
   $("#auth-credentials-step").hidden = false;
-  $("#auth-otp-step").hidden = true;
-  $("#auth-otp").value = "";
-  $("#otp-message").textContent = "";
+  $("#email-verification-step").hidden = true;
+  $("#verification-message").textContent = "";
 }
 
-function showOtpStep(email) {
+function showVerificationStep(email) {
   $("#auth-credentials-step").hidden = true;
-  $("#auth-otp-step").hidden = false;
-  $("#otp-email-label").textContent = email;
-  $("#otp-message").classList.remove("success");
-  $("#auth-otp").focus();
+  $("#email-verification-step").hidden = false;
+  $("#verification-email-label").textContent = email;
+  $("#verification-message").textContent = "";
+  $("#verification-message").classList.remove("success");
 }
 
 function openAuth(required = false) {
@@ -479,8 +478,8 @@ $("#auth-form").addEventListener("submit", async event => {
       : await signUp(email, password, { fullName, birthDate, dailyWordGoal: state.wordGoal });
     if (error) throw error;
     if (state.authMode === "signup" && !data.session) {
-      state.pendingSignup = { email, fullName, birthDate };
-      showOtpStep(email);
+      state.pendingSignupEmail = email;
+      showVerificationStep(email);
       return;
     }
     state.authRequired = false;
@@ -503,52 +502,21 @@ $("#auth-form").addEventListener("submit", async event => {
   }
 });
 
-$("#auth-otp").addEventListener("input", event => {
-  event.target.value = event.target.value.replace(/\D/g, "").slice(0, 6);
-});
-$("#otp-form").addEventListener("submit", async event => {
-  event.preventDefault();
-  const token = $("#auth-otp").value;
-  const message = $("#otp-message");
-  const submit = event.currentTarget.querySelector('button[type="submit"]');
-  if (!state.pendingSignup || token.length !== 6) return;
-  submit.disabled = true;
-  submit.textContent = "인증 중…";
-  message.textContent = "";
-  try {
-    const { data, error } = await verifyEmailOtp(state.pendingSignup.email, token);
-    if (error) throw error;
-    state.authRequired = false;
-    document.body.classList.remove("auth-locked");
-    updateAccountUI(data.session);
-    await persist(saveProfile({
-      full_name: state.pendingSignup.fullName,
-      birth_date: state.pendingSignup.birthDate,
-      daily_word_goal: state.wordGoal,
-      last_study_date: new Date().toISOString().slice(0, 10)
-    }));
-    await hydrateLearningData();
-    state.pendingSignup = null;
-    closeModal("#auth-modal");
-    showToast("이메일 인증 완료! 학습 기록 저장을 시작해요.");
-  } catch (error) {
-    console.error(error);
-    message.classList.remove("success");
-    message.textContent = "인증번호가 다르거나 만료됐어요. 다시 확인해 주세요.";
-  } finally {
-    submit.disabled = false;
-    submit.textContent = "이메일 인증하기";
-  }
-});
-$("#resend-otp").addEventListener("click", async () => {
-  if (!state.pendingSignup) return;
-  const { error } = await resendSignupOtp(state.pendingSignup.email);
-  $("#otp-message").textContent = error ? "잠시 후 다시 시도해 주세요." : "새 인증번호를 보냈어요.";
-  $("#otp-message").classList.toggle("success", !error);
+$("#resend-verification-email").addEventListener("click", async () => {
+  if (!state.pendingSignupEmail) return;
+  const { error } = await resendSignupEmail(state.pendingSignupEmail);
+  $("#verification-message").textContent = error ? "잠시 후 다시 시도해 주세요." : "인증 메일을 다시 보냈어요.";
+  $("#verification-message").classList.toggle("success", !error);
 });
 $("#back-to-signup").addEventListener("click", () => {
   showCredentialsStep();
   setAuthMode("signup");
+});
+$("#back-to-login").addEventListener("click", () => {
+  const email = state.pendingSignupEmail;
+  showCredentialsStep();
+  setAuthMode("login");
+  $("#auth-email").value = email;
 });
 
 $("#account-action").addEventListener("click", async () => {
@@ -597,7 +565,7 @@ async function initializeCloud() {
       document.body.classList.remove("auth-locked");
       await hydrateLearningData();
       if ($("#auth-modal").classList.contains("open")) {
-        state.pendingSignup = null;
+        state.pendingSignupEmail = "";
         closeModal("#auth-modal");
         showToast("이메일 인증 완료! 학습 기록 저장을 시작해요.");
       }
