@@ -1,5 +1,7 @@
 const COMMON_FORMS = [
   [/珈琲/g, "コーヒー"],
+  [/私/g, "わたし"],
+  [/民/g, "みん"],
   [/下さい/g, "ください"],
   [/御願いします/g, "お願いします"],
   [/お願いいたします/g, "お願いします"],
@@ -7,7 +9,13 @@ const COMMON_FORMS = [
   [/大丈夫/g, "だいじょうぶ"]
 ];
 
-const REQUIRED_EXPRESSIONS = ["ください", "お願いします", "ありがとう", "だいじょうぶ"];
+const REQUIRED_EXPRESSIONS = [
+  ["ください", "ください"],
+  ["お願いします", "お願いします"],
+  ["ありがとう", "ありがとう"],
+  ["だいじょうぶ", "だいじょうぶ"],
+  ["みん", "ミン"]
+];
 
 function katakanaToHiragana(text) {
   return [...text].map(character => {
@@ -42,14 +50,14 @@ export function evaluateSpeech(expected, transcript, confidence = 1) {
   const normalizedTranscript = normalizeJapanese(transcript);
   const longestLength = Math.max(normalizedExpected.length, normalizedTranscript.length, 1);
   const similarity = 1 - editDistance(normalizedExpected, normalizedTranscript) / longestLength;
-  const requiredExpression = REQUIRED_EXPRESSIONS.find(expression =>
+  const requiredExpression = REQUIRED_EXPRESSIONS.find(([expression]) =>
     normalizedExpected.includes(normalizeJapanese(expression)) && !normalizedTranscript.includes(normalizeJapanese(expression))
   );
   const lowConfidence = Number.isFinite(confidence) && confidence > 0 && confidence < 0.25 && similarity < 0.95;
   const passed = !requiredExpression && !lowConfidence && similarity >= 0.8;
 
   let feedback = "목표 문장과 자연스럽게 일치했어요.";
-  if (requiredExpression) feedback = `끝부분이 달라요. 「${requiredExpression}」라고 말해 보세요.`;
+  if (requiredExpression) feedback = `핵심 표현이 달라요. 「${requiredExpression[1]}」 부분을 정확히 말해 보세요.`;
   else if (lowConfidence) feedback = "소리가 또렷하지 않았어요. 조금 더 천천히 다시 말해 보세요.";
   else if (!passed && similarity >= 0.6) feedback = "거의 맞았어요. 빠진 소리가 없는지 확인하고 다시 말해 보세요.";
   else if (!passed) feedback = "목표 문장과 다르게 들렸어요. 정답을 다시 듣고 천천히 말해 보세요.";

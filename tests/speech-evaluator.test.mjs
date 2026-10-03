@@ -11,5 +11,10 @@ assert.equal(evaluateRecognitionAlternatives("コーヒーをください。", [
   { transcript: "コーヒーをお願いします", confidence: 0.9 },
   { transcript: "コーヒーをください", confidence: 0.8 }
 ]).passed, false);
+assert.equal(normalizeJapanese("私は民です"), normalizeJapanese("わたしはミンです"));
+assert.equal(evaluateSpeech("わたしはミンです。", "私は民です").passed, true);
+assert.equal(evaluateSpeech("わたしはミンです。", "私はみんです").passed, true);
+assert.equal(evaluateSpeech("わたしはミンです。", "私はリンです").passed, false);
+assert.match(evaluateSpeech("わたしはミンです。", "私はリンです").feedback, /ミン/);
 
-console.log("speech evaluator: 7 assertions passed");
+console.log("speech evaluator: 12 assertions passed");
