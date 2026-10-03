@@ -61,7 +61,11 @@ const chapters = [
   { icon: "¥", color: "#e9f4e3", category: "travel", n: "CHAPTER 07", title: "가격과 수량 묻기", desc: "가격을 듣고 필요한 수량을 말해요.", place: "가게에서", speaker: "손님", phrase: "これはいくらですか。", reading: "これは いくらですか", translation: "이것은 얼마인가요?", parts: [["これは", "이것은"], ["いくらですか", "얼마인가요"]], choices: [["これはいくらですか。", "이것은 얼마예요"], ["二つください。", "두 개 주세요"], ["これをください。", "이것을 주세요"]] },
   { icon: "⌖", color: "#e8eff7", category: "travel", n: "CHAPTER 08", title: "길과 장소 묻기", desc: "목적지까지 가는 길을 물어봐요.", place: "길을 물을 때", speaker: "나", phrase: "駅はどこですか。", reading: "えきは どこですか", translation: "역은 어디인가요?", parts: [["駅は", "역은"], ["どこですか", "어디인가요"]], choices: [["駅はどこですか。", "역은 어디예요"], ["トイレはどこですか。", "화장실은 어디예요"], ["ここですか。", "여기인가요"]] },
   { icon: "🚃", color: "#edf0f5", category: "travel", n: "CHAPTER 09", title: "교통수단 이용하기", desc: "표를 사고 목적지를 확인해요.", place: "역 매표소에서", speaker: "승객", phrase: "東京まで一枚お願いします。", reading: "とうきょうまで いちまい おねがいします", translation: "도쿄까지 한 장 부탁합니다.", parts: [["東京まで一枚", "도쿄까지 한 장"], ["お願いします", "부탁합니다"]], choices: [["東京まで一枚お願いします。", "도쿄까지 한 장"], ["大阪までお願いします。", "오사카까지"], ["何番線ですか。", "몇 번 승강장이에요"]] },
-  { icon: "＋", color: "#fff0ed", category: "daily", n: "CHAPTER 10", title: "도움 요청하기", desc: "곤란한 상황에서 도움을 요청해요.", place: "도움이 필요할 때", speaker: "나", phrase: "助けてください。", reading: "たすけて ください", translation: "도와주세요.", parts: [["助けて", "도와"], ["ください", "주세요"]], choices: [["助けてください。", "도와주세요"], ["大丈夫ですか。", "괜찮으세요"], ["すみません。", "실례합니다"]] }
+  { icon: "＋", color: "#fff0ed", category: "daily", n: "CHAPTER 10", title: "도움 요청하기", desc: "곤란한 상황에서 도움을 요청해요.", place: "도움이 필요할 때", speaker: "나", phrase: "助けてください。", reading: "たすけて ください", translation: "도와주세요.", parts: [["助けて", "도와"], ["ください", "주세요"]], choices: [["助けてください。", "도와주세요"], ["大丈夫ですか。", "괜찮으세요"], ["すみません。", "실례합니다"]] },
+  { icon: "◷", color: "#e8f3f5", category: "daily", n: "CHAPTER 11", title: "몇 시인지 묻기 · 何時に", desc: "何時に를 붙여 일과 시간을 물어봐요.", place: "아침 일과를 이야기할 때", speaker: "나", phrase: "何時に起きますか。", reading: "なんじに おきますか", translation: "몇 시에 일어나요?", pattern: "何時に(난지니) + 동작 + ますか", grammar: "何時に는 ‘몇 시에’예요. 대답할 때는 七時に처럼 정확한 시각 뒤에 に를 붙여요.", parts: [["何時に", "몇 시에"], ["起きますか", "일어나요?"]], choices: [["何時に起きますか。", "몇 시에 일어나요?"], ["何時に寝ますか。", "몇 시에 자요?"], ["何時に帰りますか。", "몇 시에 돌아가요?"]] },
+  { icon: "♡", color: "#fff0e9", category: "daily", n: "CHAPTER 12", title: "하고 싶은 것 말하기 · ～たい", desc: "동사를 ～たいです로 바꿔 바람을 말해요.", place: "여행 계획을 이야기할 때", speaker: "나", phrase: "日本に行きたいです。", reading: "にほんに いきたいです", translation: "일본에 가고 싶어요.", pattern: "동사 ます 빼기 + たいです(타이데스)", grammar: "行きます에서 ます를 빼고 たいです를 붙이면 行きたいです, ‘가고 싶어요’가 돼요.", parts: [["日本に", "일본에"], ["行きたいです", "가고 싶어요"]], choices: [["日本に行きたいです。", "일본에 가고 싶어요"], ["ラーメンを食べたいです。", "라멘을 먹고 싶어요"], ["コーヒーを飲みたいです。", "커피를 마시고 싶어요"]] },
+  { icon: "✓", color: "#e9f4e3", category: "daily", n: "CHAPTER 13", title: "할 수 있는 것 말하기 · できる", desc: "できます를 써서 가능한 일을 말해요.", place: "할 수 있는 일을 소개할 때", speaker: "나", phrase: "日本語が少しできます。", reading: "にほんごが すこし できます", translation: "일본어를 조금 할 수 있어요.", pattern: "할 수 있는 것 + が + できます(데키마스)", grammar: "できる는 ‘할 수 있다’예요. 정중한 회화에서는 できます라고 말해요.", parts: [["日本語が", "일본어를"], ["少し", "조금"], ["できます", "할 수 있어요"]], choices: [["日本語が少しできます。", "일본어를 조금 해요"], ["料理ができます。", "요리할 수 있어요"], ["運転ができます。", "운전할 수 있어요"]] },
+  { icon: "●", color: "#f6eddd", category: "daily", n: "CHAPTER 14", title: "지금 하는 일 말하기 · ～ている", desc: "～ています로 지금 하는 행동을 말해요.", place: "지금 무엇을 하는지 말할 때", speaker: "나", phrase: "日本語を勉強しています。", reading: "にほんごを べんきょうしています", translation: "일본어를 공부하고 있어요.", pattern: "동사 て형 + います(이마스)", grammar: "～ている는 ‘하고 있다’예요. 정중한 회화에서는 ～ています로 말해요.", parts: [["日本語を", "일본어를"], ["勉強しています", "공부하고 있어요"]], choices: [["日本語を勉強しています。", "일본어를 공부하고 있어요"], ["いま食べています。", "지금 먹고 있어요"], ["音楽を聞いています。", "음악을 듣고 있어요"]] }
 ];
 
 const kana = {
@@ -78,7 +82,11 @@ const reviewItems = [
   { prompt: "“아이스로 부탁한다고 말해보세요.”", hint: "アイスで ______。", answer: "アイスでお願いします。" },
   { prompt: "“계산을 부탁해보세요.”", hint: "お会計を ______。", answer: "お会計をお願いします。" },
   { prompt: "“괜찮다고 답해보세요.”", hint: "はい、____ です。", answer: "はい、大丈夫です。" },
-  { prompt: "“고맙다고 말해보세요.”", hint: "どうも ______。", answer: "どうもありがとう。" }
+  { prompt: "“고맙다고 말해보세요.”", hint: "どうも ______。", answer: "どうもありがとう。" },
+  { prompt: "“몇 시에 일어나는지 물어보세요.”", hint: "何時__ 起きますか。", answer: "何時に起きますか。" },
+  { prompt: "“일본에 가고 싶다고 말해보세요.”", hint: "日本に 行き____です。", answer: "日本に行きたいです。" },
+  { prompt: "“일본어를 조금 할 수 있다고 말해보세요.”", hint: "日本語が 少し ______。", answer: "日本語が少しできます。" },
+  { prompt: "“일본어를 공부하고 있다고 말해보세요.”", hint: "日本語を 勉強して____。", answer: "日本語を勉強しています。" }
 ];
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -326,10 +334,11 @@ function renderChapters() {
   $("#chapter-list").innerHTML = visibleChapters.map(({ chapter, index }) => `
     <button class="chapter-card ${chapter.current ? "current" : ""} ${chapter.locked ? "locked" : ""}" data-chapter="${index}" ${chapter.locked ? "aria-disabled=\"true\"" : ""}>
       <span class="chapter-icon" style="background:${chapter.color}">${chapter.icon}</span>
-      <span><small>${chapter.n} · ${chapter.category === "basic" ? "기초" : chapter.category === "travel" ? "여행" : "일상"}</small><h3>${chapter.title}</h3><p>${chapter.desc}</p></span>
+      <span><small>${chapter.n} · ${chapter.category === "basic" ? "기초" : chapter.category === "travel" ? "여행" : "일상"}</small><h3>${chapter.title}</h3><p>${chapter.desc}</p>${chapter.pattern ? `<em class="pattern-chip">${chapter.pattern}</em>` : ""}</span>
       <span class="status">${chapter.done ? "✓" : chapter.locked ? "⌕" : "▶"}</span>
     </button>`).join("");
   $("#course-completed-count").textContent = chapters.filter(chapter => chapter.done).length;
+  $("#course-total-count").textContent = chapters.length;
   $$('[data-chapter-filter]').forEach(button => button.classList.toggle("active", button.dataset.chapterFilter === state.chapterFilter));
   renderHomeLesson();
 }
@@ -413,6 +422,9 @@ function openLesson(index = currentChapterIndex()) {
   $("#lesson-reading").textContent = chapter.reading;
   $("#lesson-translation").textContent = chapter.translation;
   $("#lesson-parts").innerHTML = chapter.parts.map(([phrase, meaning], partIndex) => `${partIndex ? "<i>+</i>" : ""}<span>${phrase}<small>${meaning}</small></span>`).join("");
+  $("#lesson-grammar").hidden = !chapter.pattern;
+  $("#lesson-pattern").textContent = chapter.pattern || "";
+  $("#lesson-grammar-explanation").textContent = chapter.grammar || "";
   renderLessonStage();
   openModal("#lesson-modal");
 }
@@ -467,6 +479,7 @@ function speechPractice(button, expected, onDone, onRetry) {
 
 function renderReview() {
   const item = reviewItems[state.reviewStep];
+  $("#review-total-count").textContent = reviewItems.length;
   $("#review-step").textContent = `${state.reviewStep + 1} / ${reviewItems.length}`;
   $("#review-prompt").textContent = item.prompt;
   $("#hint-text").textContent = item.hint;

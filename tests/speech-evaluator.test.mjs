@@ -16,5 +16,10 @@ assert.equal(evaluateSpeech("わたしはミンです。", "私は民です").pa
 assert.equal(evaluateSpeech("わたしはミンです。", "私はみんです").passed, true);
 assert.equal(evaluateSpeech("わたしはミンです。", "私はリンです").passed, false);
 assert.match(evaluateSpeech("わたしはミンです。", "私はリンです").feedback, /ミン/);
+assert.equal(evaluateSpeech("何時に起きますか。", "なんじにおきますか").passed, true);
+assert.equal(evaluateSpeech("日本に行きたいです。", "にほんにいきたいです").passed, true);
+assert.equal(evaluateSpeech("日本に行きたいです。", "日本に行きます").passed, false);
+assert.equal(evaluateSpeech("日本語が少しできます。", "にほんごがすこしできます").passed, true);
+assert.equal(evaluateSpeech("日本語を勉強しています。", "日本語をべんきょうしています").passed, true);
 
-console.log("speech evaluator: 12 assertions passed");
+console.log("speech evaluator: 17 assertions passed");

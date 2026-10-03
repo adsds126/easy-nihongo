@@ -55,7 +55,7 @@
                 <h2>딱 12분이면 충분해요</h2>
                 <p>새로운 표현을 듣고, 직접 말하고,<br />어제 배운 문장을 복습해요.</p>
                 <div class="daily-stats">
-                  <span><b>10</b> 새 단어</span><i></i><span><b>1</b> 회화</span><i></i><span><b>8</b> 복습</span>
+                  <span><b>10</b> 새 단어</span><i></i><span><b>1</b> 회화</span><i></i><span><b>12</b> 복습</span>
                 </div>
                 <button class="primary-button" id="start-daily">오늘 학습 시작 <span>→</span></button>
               </div>
@@ -91,7 +91,7 @@
               <div class="lesson-body">
                 <div class="lesson-meta"><span class="tag review">복습</span><span>5분</span></div>
                 <h3>어제의 문장 다시 말하기</h3><p>힌트 없이 말할 수 있는지 확인해요.</p>
-                <div class="review-count"><b>8</b><span>개 문장이<br />기다리고 있어요</span></div>
+                <div class="review-count"><b>12</b><span>개 문장이<br />기다리고 있어요</span></div>
               </div>
               <button class="round-play dark" data-page-link="review" aria-label="복습 시작">▶</button>
             </article>
@@ -107,7 +107,7 @@
         </section>
 
         <section class="page" data-page="lessons">
-          <div class="topbar"><div><p class="eyebrow">SPEAKING COURSE</p><h1>실전 회화 챕터</h1><p class="page-intro">짧게 듣고 직접 말하며, 여행에서 바로 쓰는 표현을 익혀요.</p></div><div class="course-progress"><b id="course-completed-count">0</b><span>/ 10 완료</span></div></div>
+          <div class="topbar"><div><p class="eyebrow">SPEAKING COURSE</p><h1>실전 회화 챕터</h1><p class="page-intro">짧게 듣고 직접 말하며, 여행에서 바로 쓰는 표현을 익혀요.</p></div><div class="course-progress"><b id="course-completed-count">0</b><span>/ <span id="course-total-count">14</span> 완료</span></div></div>
           <div class="filter-row"><button class="filter active" data-chapter-filter="all">전체</button><button class="filter" data-chapter-filter="basic">기초</button><button class="filter" data-chapter-filter="travel">여행</button><button class="filter" data-chapter-filter="daily">일상</button></div>
           <div class="chapter-list" id="chapter-list"></div>
         </section>
@@ -135,7 +135,7 @@
         </section>
 
         <section class="page" data-page="review">
-          <div class="topbar"><div><p class="eyebrow">SMART REVIEW</p><h1>오늘의 복습</h1><p class="page-intro">잊기 직전인 표현부터, 귀와 입으로 다시 꺼내봐요.</p></div><div class="review-total"><b>8</b><span>개 남음</span></div></div>
+          <div class="topbar"><div><p class="eyebrow">SMART REVIEW</p><h1>오늘의 복습</h1><p class="page-intro">잊기 직전인 표현부터, 귀와 입으로 다시 꺼내봐요.</p></div><div class="review-total"><b id="review-total-count">12</b><span>개 남음</span></div></div>
           <div class="review-summary"><div><span class="summary-icon ear">◖</span><p>귀 복습<strong>3개</strong></p></div><div><span class="summary-icon mouth">◡</span><p>입 복습<strong>3개</strong></p></div><div><span class="summary-icon talk">···</span><p>대화 복습<strong>2개</strong></p></div></div>
           <article class="review-stage">
             <div class="review-stage-top"><span class="tag speaking">입 복습</span><span id="review-step">1 / 8</span></div>
@@ -164,6 +164,7 @@
           <p class="speaker-label" id="lesson-speaker">나</p><h2 id="lesson-title">ありがとうございます。</h2><p class="phrase-reading" id="lesson-reading">ありがとうございます</p><p class="phrase-translation" id="lesson-translation">감사합니다.</p>
           <div class="phrase-parts" id="lesson-parts"></div>
         </div>
+        <div class="grammar-note" id="lesson-grammar" hidden><span>오늘의 말하기 공식</span><strong id="lesson-pattern"></strong><p id="lesson-grammar-explanation"></p></div>
         <div class="lesson-interaction" id="lesson-interaction"></div>
         <button class="primary-button wide" id="next-lesson-step">다음 단계 <span>→</span></button>
       </section>
