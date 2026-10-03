@@ -3,6 +3,7 @@ import {
   loadLearningData, flushPendingActions, saveProfile, saveChapterProgress,
   saveWordProgress, saveReviewProgress, saveStudySession
 } from "./data-service.js";
+import { evaluateRecognitionAlternatives } from "./speech-evaluator.js";
 
 const state = {
   page: "home",
@@ -340,9 +341,9 @@ function closeModal(id) {
 
 const lessonStages = [
   { label: "1단계 · 먼저 들어보세요", coach: "먼저 자연스러운 속도로 들어보세요. 뜻을 완벽히 몰라도 괜찮아요!", interaction: '<p class="listen-note">▶ 버튼을 누르면 원어민 발음으로 들을 수 있어요.</p>', button: "들었어요" },
-  { label: "2단계 · 천천히 따라 해보세요", coach: "문장을 두 덩어리로 나누어 천천히 따라 말해볼까요?", interaction: '<button class="repeat-button" id="practice-mic">● 누르고 따라 말하기</button>', button: "말해봤어요" },
+  { label: "2단계 · 천천히 따라 해보세요", coach: "문장을 두 덩어리로 나누어 천천히 따라 말해볼까요?", interaction: '<button class="repeat-button" id="practice-mic">● 누르고 따라 말하기</button><p class="practice-feedback" id="lesson-speech-feedback"></p>', button: "말해봤어요", requiresSpeech: true },
   { label: "3단계 · 단어를 바꿔보세요", coach: "이번에는 커피 대신 물을 주문해 보세요.", interaction: '<div class="choice-row"><button data-choice="水をください。">水 · 물</button><button data-choice="お茶をください。">お茶 · 차</button><button data-choice="これをください。">これ · 이것</button></div>', button: "응용했어요" },
-  { label: "4단계 · 실전처럼 대답하세요", coach: "점원이 주문을 물었어요. 힌트 없이 직접 대답해 보세요!", interaction: '<button class="repeat-button" id="practice-mic">● 눌러서 대답하기</button>', button: "챕터 완료" }
+  { label: "4단계 · 실전처럼 대답하세요", coach: "점원이 주문을 물었어요. 힌트 없이 직접 대답해 보세요!", interaction: '<button class="repeat-button" id="practice-mic">● 눌러서 대답하기</button><p class="practice-feedback" id="lesson-speech-feedback"></p>', button: "챕터 완료", requiresSpeech: true }
 ];
 
 function renderLessonStage() {
@@ -353,6 +354,8 @@ function renderLessonStage() {
   $("#coach-text").textContent = stage.coach;
   $("#lesson-interaction").innerHTML = stage.interaction;
   $("#next-lesson-step").innerHTML = `${stage.button} <span>→</span>`;
+  const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  $("#next-lesson-step").disabled = Boolean(stage.requiresSpeech && Recognition);
 }
 
 function openLesson() {
@@ -361,26 +364,50 @@ function openLesson() {
   openModal("#lesson-modal");
 }
 
-function speechPractice(button, expected, onDone) {
+function setPracticeButtonLabel(button, label, expected) {
+  if (button.id === "review-mic") button.innerHTML = `<span>●</span><strong>${label}</strong><small>${expected}</small>`;
+  else button.textContent = label;
+}
+
+function speechPractice(button, expected, onDone, onRetry) {
   const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   button.classList.add("listening");
-  button.textContent = "듣고 있어요…";
+  setPracticeButtonLabel(button, "듣고 있어요…", expected);
   if (!Recognition) {
     setTimeout(() => {
       button.classList.remove("listening");
-      button.textContent = "✓ 잘 들렸어요!";
-      onDone?.(expected);
-    }, 1400);
+      setPracticeButtonLabel(button, "자동 판정 미지원", expected);
+      onRetry?.({ transcript: "", feedback: "이 브라우저에서는 발음 자동 판정을 지원하지 않아요." });
+    }, 500);
     return;
   }
   const recognition = new Recognition();
   recognition.lang = "ja-JP";
   recognition.interimResults = false;
-  recognition.onresult = event => onDone?.(event.results[0][0].transcript);
-  recognition.onerror = () => showToast("잘 들리지 않았어요. 조용한 곳에서 다시 말해보세요.");
+  recognition.maxAlternatives = 3;
+  let resultLabel = "● 다시 말하기";
+  recognition.onresult = event => {
+    const recognitionResult = event.results[0];
+    const alternatives = Array.from({ length: recognitionResult.length }, (_, index) => ({
+      transcript: recognitionResult[index].transcript,
+      confidence: recognitionResult[index].confidence
+    }));
+    const match = evaluateRecognitionAlternatives(expected, alternatives);
+    if (match.passed) {
+      resultLabel = "✓ 잘 말했어요";
+      onDone?.(match.transcript, match);
+    } else {
+      resultLabel = "● 다시 말하기";
+      onRetry?.(match);
+    }
+  };
+  recognition.onerror = () => {
+    resultLabel = "● 다시 말하기";
+    showToast("잘 들리지 않았어요. 조용한 곳에서 다시 말해보세요.");
+  };
   recognition.onend = () => {
     button.classList.remove("listening");
-    button.textContent = "● 다시 말하기";
+    setPracticeButtonLabel(button, resultLabel, expected);
   };
   recognition.start();
 }
@@ -392,6 +419,7 @@ function renderReview() {
   $("#hint-text").textContent = item.hint;
   $("#hint-text").classList.remove("show");
   $("#review-result").textContent = "";
+  $("#review-result").className = "speech-result";
   $("#review-mic small").textContent = item.answer;
 }
 
@@ -432,7 +460,15 @@ document.addEventListener("click", event => {
 
   if (event.target.closest("#practice-mic")) {
     const button = event.target.closest("#practice-mic");
-    speechPractice(button, "コーヒーをください。", () => showToast("좋아요! 문장이 또렷하게 들렸어요."));
+    const feedback = $("#lesson-speech-feedback");
+    speechPractice(button, "コーヒーをください。", (transcript, match) => {
+      feedback.textContent = `✓ 「${transcript}」 ${match.feedback}`;
+      feedback.className = "practice-feedback correct";
+      $("#next-lesson-step").disabled = false;
+    }, match => {
+      feedback.textContent = `${match.transcript ? `「${match.transcript}」로 들렸어요. ` : ""}${match.feedback}`;
+      feedback.className = "practice-feedback retry";
+    });
   }
 });
 
@@ -534,8 +570,9 @@ $("#review-hint").addEventListener("click", () => $("#hint-text").classList.togg
 $("#review-mic").addEventListener("click", event => {
   const button = event.currentTarget;
   const item = reviewItems[state.reviewStep];
-  speechPractice(button, item.answer, transcript => {
-    $("#review-result").textContent = `✓ “${transcript}” 잘 전달됐어요!`;
+  speechPractice(button, item.answer, (transcript, match) => {
+    $("#review-result").textContent = `✓ 「${transcript}」 ${match.feedback}`;
+    $("#review-result").className = "speech-result correct";
     speak(item.answer);
     const previous = state.reviewProgress[`review-${state.reviewStep + 1}`] || {};
     const progress = {
@@ -553,6 +590,9 @@ $("#review-mic").addEventListener("click", event => {
       state.reviewStep = (state.reviewStep + 1) % reviewItems.length;
       renderReview();
     }, 2300);
+  }, match => {
+    $("#review-result").textContent = `${match.transcript ? `「${match.transcript}」로 들렸어요. ` : ""}${match.feedback}`;
+    $("#review-result").className = "speech-result retry";
   });
 });
 
