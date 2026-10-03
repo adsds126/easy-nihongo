@@ -372,14 +372,14 @@ function renderChapters() {
 
 function renderSentence() {
   const item = dailySentences[state.sentenceIndex];
-  const progress = state.reviewProgress[`sentence-${item.source}`];
+  const progress = state.reviewProgress[`sentence-${item.id}`];
   $("#home-sentence-category").textContent = item.category;
   $("#home-sentence-jp").textContent = item.jp;
   $("#home-sentence-reading").textContent = item.reading;
   $("#home-sentence-ko").textContent = item.ko;
   $("#home-sentence-sound").dataset.speak = item.jp;
   $("#sentence-category").textContent = item.category;
-  $("#sentence-source").textContent = `선별 문장 ${state.sentenceIndex + 1} / ${dailySentences.length}`;
+  $("#sentence-source").textContent = `영상 표현 ${state.sentenceIndex + 1} / ${dailySentences.length}`;
   $("#sentence-jp").textContent = item.jp;
   $("#sentence-reading").textContent = item.reading;
   $("#sentence-ko").textContent = item.ko;
@@ -741,7 +741,7 @@ $("#sentence-practice").addEventListener("click", event => {
     $("#sentence-result").textContent = `✓ 「${transcript}」 ${match.feedback}`;
     $("#sentence-result").className = "speech-result correct";
     speak(item.jp);
-    const reviewId = `sentence-${item.source}`;
+    const reviewId = `sentence-${item.id}`;
     const previous = state.reviewProgress[reviewId] || {};
     const progress = {
       review_id: reviewId,
