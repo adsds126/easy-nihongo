@@ -56,7 +56,7 @@
                 <h2>딱 12분이면 충분해요</h2>
                 <p>새로운 표현을 듣고, 직접 말하고,<br />어제 배운 문장을 복습해요.</p>
                 <div class="daily-stats">
-                  <span><b>10</b> 새 단어</span><i></i><span><b>1</b> 회화</span><i></i><span><b>12</b> 복습</span>
+                  <span><b id="home-word-goal">10</b> 새 단어</span><i></i><span><b>1</b> 회화</span><i></i><span><b>12</b> 복습</span>
                 </div>
                 <button class="primary-button" id="start-daily">오늘 학습 시작 <span>→</span></button>
               </div>
@@ -99,12 +99,7 @@
           </div>
 
           <div class="section-title"><div><p class="eyebrow">TODAY'S WORDS</p><h2>오늘 만날 단어</h2></div><button class="text-button" data-page-link="words">단어 학습 <span>›</span></button></div>
-          <div class="word-preview">
-            <button class="word-chip" data-speak="コーヒー"><span>コーヒー <em>こーひー · koohii</em></span><small>커피</small><i>♬</i></button>
-            <button class="word-chip" data-speak="ください"><span>ください <em>ください · kudasai</em></span><small>주세요</small><i>♬</i></button>
-            <button class="word-chip" data-speak="冷たい"><span>冷たい <em>つめたい · tsumetai</em></span><small>차갑다</small><i>♬</i></button>
-            <button class="word-chip" data-speak="お願いします"><span>お願いします <em>おねがいします · onegai shimasu</em></span><small>부탁합니다</small><i>♬</i></button>
-          </div>
+          <div class="word-preview" id="home-word-preview"></div>
 
           <div class="section-title"><div><p class="eyebrow">TODAY'S SENTENCE</p><h2>오늘의 문장</h2></div><button class="text-button" data-page-link="sentences">문장 학습 <span>›</span></button></div>
           <article class="home-sentence-card">
@@ -120,7 +115,7 @@
         </section>
 
         <section class="page" data-page="words">
-          <div class="topbar"><div><p class="eyebrow">DAILY WORDS</p><h1>오늘의 단어</h1><p class="page-intro">오늘은 <b id="word-goal-label">10개</b>의 단어를 소리 내어 익혀요.</p></div><button class="soft-button" id="change-goal">학습량 변경</button></div>
+          <div class="topbar"><div><p class="eyebrow">DAILY WORDS · <span id="word-date-label">오늘</span></p><h1>오늘의 단어</h1><p class="page-intro">60개 초급 단어 중 매일 새로 뽑은 <b id="word-goal-label">10개</b>를 소리 내어 익혀요.</p></div><button class="soft-button" id="change-goal">학습량 변경</button></div>
           <div class="study-layout">
             <article class="flashcard" id="flashcard">
               <div class="flashcard-top"><span>카드 <b id="word-index">1</b> / <span id="word-total">10</span></span><button class="bookmark" id="bookmark-word">♡</button></div>

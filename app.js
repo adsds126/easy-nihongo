@@ -5,6 +5,7 @@ import {
 } from "./data-service.js";
 import { evaluateRecognitionAlternatives } from "./speech-evaluator.js";
 import { dailySentences } from "./daily-sentences.js";
+import { selectDailyWords } from "./daily-word-selector.js";
 
 const state = {
   page: "home",
@@ -54,14 +55,73 @@ const words = [
   { jp: "大丈夫", reading: "だいじょうぶ · 다이조오부", ko: "괜찮다", type: "형용사", example: "はい、大丈夫です。", exampleKo: "네, 괜찮아요." },
   { jp: "おいしい", reading: "おいしい · 오이시이", ko: "맛있다", type: "형용사", example: "とてもおいしいです。", exampleKo: "정말 맛있어요." },
   { jp: "今日", reading: "きょう · 쿄오", ko: "오늘", type: "명사", example: "今日は暑いです。", exampleKo: "오늘은 더워요." },
-  { jp: "友達", reading: "ともだち · 토모다치", ko: "친구", type: "명사", example: "友達と来ました。", exampleKo: "친구와 왔어요." }
+  { jp: "友達", reading: "ともだち · 토모다치", ko: "친구", type: "명사", example: "友達と来ました。", exampleKo: "친구와 왔어요." },
+  { jp: "明日", reading: "あした · 아시타", ko: "내일", type: "명사", example: "明日、行きます。", exampleKo: "내일 갈게요." },
+  { jp: "昨日", reading: "きのう · 키노오", ko: "어제", type: "명사", example: "昨日は休みでした。", exampleKo: "어제는 쉬는 날이었어요." },
+  { jp: "朝", reading: "あさ · 아사", ko: "아침", type: "명사", example: "朝ご飯を食べます。", exampleKo: "아침밥을 먹어요." },
+  { jp: "夜", reading: "よる · 요루", ko: "밤", type: "명사", example: "夜に電話します。", exampleKo: "밤에 전화할게요." },
+  { jp: "駅", reading: "えき · 에키", ko: "역", type: "명사", example: "駅はどこですか。", exampleKo: "역은 어디인가요?" },
+  { jp: "電車", reading: "でんしゃ · 덴샤", ko: "전철", type: "명사", example: "電車に乗ります。", exampleKo: "전철을 타요." },
+  { jp: "空港", reading: "くうこう · 쿠우코오", ko: "공항", type: "명사", example: "空港までお願いします。", exampleKo: "공항까지 부탁합니다." },
+  { jp: "ホテル", reading: "ほてる · 호테루", ko: "호텔", type: "명사", example: "ホテルに帰ります。", exampleKo: "호텔로 돌아가요." },
+  { jp: "部屋", reading: "へや · 헤야", ko: "방", type: "명사", example: "部屋はきれいです。", exampleKo: "방은 깨끗해요." },
+  { jp: "入口", reading: "いりぐち · 이리구치", ko: "입구", type: "명사", example: "入口はあそこです。", exampleKo: "입구는 저쪽이에요." },
+  { jp: "出口", reading: "でぐち · 데구치", ko: "출구", type: "명사", example: "出口を探しています。", exampleKo: "출구를 찾고 있어요." },
+  { jp: "トイレ", reading: "といれ · 토이레", ko: "화장실", type: "명사", example: "トイレはどこですか。", exampleKo: "화장실은 어디인가요?" },
+  { jp: "右", reading: "みぎ · 미기", ko: "오른쪽", type: "명사", example: "右に曲がってください。", exampleKo: "오른쪽으로 돌아주세요." },
+  { jp: "左", reading: "ひだり · 히다리", ko: "왼쪽", type: "명사", example: "左にあります。", exampleKo: "왼쪽에 있어요." },
+  { jp: "近い", reading: "ちかい · 치카이", ko: "가깝다", type: "형용사", example: "駅は近いです。", exampleKo: "역은 가까워요." },
+  { jp: "遠い", reading: "とおい · 토오이", ko: "멀다", type: "형용사", example: "ここから遠いです。", exampleKo: "여기서 멀어요." },
+  { jp: "行く", reading: "いく · 이쿠", ko: "가다", type: "동사", example: "日本に行きたいです。", exampleKo: "일본에 가고 싶어요." },
+  { jp: "来る", reading: "くる · 쿠루", ko: "오다", type: "동사", example: "友達が来ます。", exampleKo: "친구가 와요." },
+  { jp: "帰る", reading: "かえる · 카에루", ko: "돌아가다", type: "동사", example: "家に帰ります。", exampleKo: "집에 돌아가요." },
+  { jp: "食べる", reading: "たべる · 타베루", ko: "먹다", type: "동사", example: "ラーメンを食べます。", exampleKo: "라멘을 먹어요." },
+  { jp: "飲む", reading: "のむ · 노무", ko: "마시다", type: "동사", example: "水を飲みます。", exampleKo: "물을 마셔요." },
+  { jp: "見る", reading: "みる · 미루", ko: "보다", type: "동사", example: "映画を見ます。", exampleKo: "영화를 봐요." },
+  { jp: "聞く", reading: "きく · 키쿠", ko: "듣다·묻다", type: "동사", example: "音楽を聞きます。", exampleKo: "음악을 들어요." },
+  { jp: "話す", reading: "はなす · 하나스", ko: "말하다", type: "동사", example: "日本語で話します。", exampleKo: "일본어로 말해요." },
+  { jp: "買う", reading: "かう · 카우", ko: "사다", type: "동사", example: "お土産を買います。", exampleKo: "기념품을 사요." },
+  { jp: "待つ", reading: "まつ · 마츠", ko: "기다리다", type: "동사", example: "ここで待ちます。", exampleKo: "여기서 기다릴게요." },
+  { jp: "分かる", reading: "わかる · 와카루", ko: "알다·이해하다", type: "동사", example: "少し分かります。", exampleKo: "조금 알아요." },
+  { jp: "好き", reading: "すき · 스키", ko: "좋아하다", type: "형용사", example: "日本料理が好きです。", exampleKo: "일본 요리를 좋아해요." },
+  { jp: "嫌い", reading: "きらい · 키라이", ko: "싫어하다", type: "형용사", example: "辛い物は嫌いです。", exampleKo: "매운 음식은 싫어해요." },
+  { jp: "大きい", reading: "おおきい · 오오키이", ko: "크다", type: "형용사", example: "大きいサイズはありますか。", exampleKo: "큰 사이즈가 있나요?" },
+  { jp: "小さい", reading: "ちいさい · 치이사이", ko: "작다", type: "형용사", example: "小さいバッグです。", exampleKo: "작은 가방이에요." },
+  { jp: "高い", reading: "たかい · 타카이", ko: "비싸다·높다", type: "형용사", example: "これは少し高いです。", exampleKo: "이것은 조금 비싸요." },
+  { jp: "安い", reading: "やすい · 야스이", ko: "싸다", type: "형용사", example: "この店は安いです。", exampleKo: "이 가게는 저렴해요." },
+  { jp: "暑い", reading: "あつい · 아츠이", ko: "덥다", type: "형용사", example: "今日は暑いです。", exampleKo: "오늘은 더워요." },
+  { jp: "寒い", reading: "さむい · 사무이", ko: "춥다", type: "형용사", example: "今日は寒いですね。", exampleKo: "오늘은 춥네요." },
+  { jp: "忙しい", reading: "いそがしい · 이소가시이", ko: "바쁘다", type: "형용사", example: "今日は忙しいです。", exampleKo: "오늘은 바빠요." },
+  { jp: "楽しい", reading: "たのしい · 타노시이", ko: "즐겁다", type: "형용사", example: "旅行は楽しいです。", exampleKo: "여행은 즐거워요." },
+  { jp: "旅行", reading: "りょこう · 료코오", ko: "여행", type: "명사", example: "旅行が好きです。", exampleKo: "여행을 좋아해요." },
+  { jp: "写真", reading: "しゃしん · 샤신", ko: "사진", type: "명사", example: "写真を撮ってください。", exampleKo: "사진을 찍어주세요." },
+  { jp: "財布", reading: "さいふ · 사이후", ko: "지갑", type: "명사", example: "財布をなくしました。", exampleKo: "지갑을 잃어버렸어요." }
 ];
 
 const wordRomaji = [
   "koohii", "kudasai", "mizu", "tsumetai", "atatakai", "hitotsu", "menyuu", "onegai shimasu", "ten'in", "chuumon",
-  "amai", "okaikei", "mochikaeri", "koko", "arigatou", "sumimasen", "daijoubu", "oishii", "kyou", "tomodachi"
+  "amai", "okaikei", "mochikaeri", "koko", "arigatou", "sumimasen", "daijoubu", "oishii", "kyou", "tomodachi",
+  "ashita", "kinou", "asa", "yoru", "eki", "densha", "kuukou", "hoteru", "heya", "iriguchi",
+  "deguchi", "toire", "migi", "hidari", "chikai", "tooi", "iku", "kuru", "kaeru", "taberu",
+  "nomu", "miru", "kiku", "hanasu", "kau", "matsu", "wakaru", "suki", "kirai", "ookii",
+  "chiisai", "takai", "yasui", "atsui", "samui", "isogashii", "tanoshii", "ryokou", "shashin", "saifu"
 ];
 words.forEach((item, index) => { item.romaji = wordRomaji[index]; });
+
+let dailyWordDateKey = localDateKey();
+let dailyWords = selectDailyWords(words, new Date(), state.wordGoal);
+
+function refreshDailyWords() {
+  dailyWordDateKey = localDateKey();
+  dailyWords = selectDailyWords(words, new Date(), state.wordGoal);
+  state.wordIndex = Math.min(state.wordIndex, Math.max(dailyWords.length - 1, 0));
+}
+
+function refreshDailyWordsWhenDateChanges() {
+  if (dailyWordDateKey === localDateKey()) return;
+  state.wordIndex = 0;
+  refreshDailyWords();
+}
 
 const chapters = [
   { icon: "👋", color: "#eef5dc", category: "basic", n: "CHAPTER 01", title: "인사하고 감사하기", desc: "첫 만남에서 자연스럽게 감사 인사를 해요.", place: "첫 만남에서", speaker: "나", phrase: "ありがとうございます。", reading: "ありがとうございます", translation: "감사합니다.", parts: [["ありがとう", "고마워"], ["ございます", "정중한 표현"]], choices: [["おはようございます。", "좋은 아침이에요"], ["ありがとうございます。", "감사합니다"], ["よろしくお願いします。", "잘 부탁합니다"]] },
@@ -265,6 +325,7 @@ async function hydrateLearningData() {
       }
     });
     localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
+    refreshDailyWords();
     updateGoalUI();
     renderWord();
     renderSentence();
@@ -433,7 +494,8 @@ function renderKana() {
 }
 
 function renderWord() {
-  const item = words[state.wordIndex % Math.min(state.wordGoal, words.length)];
+  refreshDailyWordsWhenDateChanges();
+  const item = dailyWords[state.wordIndex % dailyWords.length];
   const progress = state.wordProgress[item.jp];
   $("#word-index").textContent = state.wordIndex + 1;
   $("#word-total").textContent = state.wordGoal;
@@ -445,10 +507,20 @@ function renderWord() {
   $("#flashcard").classList.remove("hidden-meaning");
   $("#bookmark-word").classList.toggle("saved", progress?.status === "hard");
   $("#bookmark-word").textContent = progress?.status === "hard" ? "♥" : "♡";
+  $("#word-date-label").textContent = new Intl.DateTimeFormat("ko-KR", { month: "long", day: "numeric" }).format(new Date());
+  renderHomeWords();
+}
+
+function renderHomeWords() {
+  $("#home-word-preview").innerHTML = dailyWords.slice(0, 4).map(item => {
+    const kana = item.reading.split(" · ")[0];
+    return `<button class="word-chip" data-speak="${item.jp}"><span>${item.jp} <em>${kana} · ${item.romaji}</em></span><small>${item.ko}</small><i>♬</i></button>`;
+  }).join("");
 }
 
 function updateGoalUI() {
   $("#word-goal-label").textContent = `${state.wordGoal}개`;
+  $("#home-word-goal").textContent = state.wordGoal;
   $("#word-total").textContent = state.wordGoal;
   $$("[data-goal]").forEach(btn => btn.classList.toggle("selected", Number(btn.dataset.goal) === state.wordGoal));
 }
@@ -673,14 +745,14 @@ $("#next-lesson-step").addEventListener("click", async () => {
   }
 });
 
-$("#word-sound").addEventListener("click", () => speak(words[state.wordIndex % words.length].jp));
+$("#word-sound").addEventListener("click", () => speak(dailyWords[state.wordIndex % dailyWords.length].jp));
 $("#flashcard").addEventListener("click", event => {
   if (!event.target.closest("button")) $("#flashcard").classList.toggle("hidden-meaning");
 });
 $("#bookmark-word").addEventListener("click", async event => {
   event.currentTarget.classList.toggle("saved");
   event.currentTarget.textContent = event.currentTarget.classList.contains("saved") ? "♥" : "♡";
-  const item = words[state.wordIndex % words.length];
+  const item = dailyWords[state.wordIndex % dailyWords.length];
   const saved = event.currentTarget.classList.contains("saved");
   state.wordProgress[item.jp] = { ...(state.wordProgress[item.jp] || {}), status: saved ? "hard" : "learning" };
   await persist(saveWordProgress({
@@ -694,7 +766,7 @@ $("#bookmark-word").addEventListener("click", async event => {
   showToast(event.currentTarget.classList.contains("saved") ? "복습 목록에 담았어요." : "복습 목록에서 뺐어요.");
 });
 async function nextWord(hard = false) {
-  const item = words[state.wordIndex % words.length];
+  const item = dailyWords[state.wordIndex % dailyWords.length];
   const previous = state.wordProgress[item.jp] || {};
   const progress = {
     word_id: item.jp,
@@ -748,6 +820,7 @@ $("#save-settings").addEventListener("click", async () => {
   localStorage.setItem("easyNihongo.wordGoal", String(state.wordGoal));
   localStorage.setItem("easyNihongo.fontScale", state.fontScale);
   state.wordIndex = 0;
+  refreshDailyWords();
   await persist(saveProfile({ daily_word_goal: state.wordGoal }), state.session ? "클라우드에도 저장했어요." : "");
   updateGoalUI(); renderWord(); closeModal("#settings-modal");
   if (!state.session) showToast(`하루 ${state.wordGoal}개 학습으로 기기에 저장했어요.`);
@@ -931,6 +1004,9 @@ updateGoalUI();
 applyFontScale();
 renderWeeklyGoal();
 refreshJapaneseVoices();
+document.addEventListener("visibilitychange", () => {
+  if (!document.hidden && dailyWordDateKey !== localDateKey()) renderWord();
+});
 if ("speechSynthesis" in window) speechSynthesis.addEventListener("voiceschanged", refreshJapaneseVoices);
 
 async function initializeCloud() {
